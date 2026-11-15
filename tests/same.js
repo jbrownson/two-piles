@@ -17,7 +17,7 @@ const { PAGE, launch, devices } = require('./lib');
   const read = (p, name) => p.evaluate(n => { const f = document.querySelector(`.fig[data-fig="${n}"]`), t = e => e ? e.textContent.replace(/\s+/g, ' ').trim() : '';
     const dd = u => { const d = u.querySelector('dd'), inp = d && d.querySelector('input'); return inp ? inp.value : t(d); };
     return { cards: [...f.querySelectorAll('.cards li')].map(t).join(' | '), ui: [...f.querySelectorAll('.ustate .u')].filter(u => u.getAttribute('data-k') !== 'hover' && u.getAttribute('data-k') !== 'views').map(u => t(u.querySelector('dt')) + '=' + dd(u)).join(' · '),
-      ran: t(f.querySelector('.patch-sum')).replace(/×\d+$/, '').replace(/^frame [\d,]+/, 'frame N') + ' [' + [...f.querySelectorAll('.code-pile .mach .hline:not([hidden]), .scr-pile .mach .hline')].map(t).filter(s => !/frames?$|^draw\(items\)/.test(s)).join(' / ') + ']', note: t(f.querySelector('.u-note')),
+      ran: t(f.querySelector('.patch-sum')).replace(/×\d+$/, '').replace(/^frame [\d,]+/, 'frame N') + ' [' + [...f.querySelectorAll('.code-pile .mach .hline:not([hidden]), .scr-pile .mach .hline')].map(t).filter(s => !/^frames since|^draw\(items\)/.test(s)).join(' / ') + ']', note: t(f.querySelector('.u-note')),
       rows: [...f.querySelectorAll('.app-list li input[type=text]')].map(i => i.value).join(' | ') || [...f.querySelectorAll('.krow')].map(t).join(' | ') }; }, name);
   let bad = 0;
   for (const name of ['piles', 'hand', 'react', 'imm', 'puri', 'deui']) {

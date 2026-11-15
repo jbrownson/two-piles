@@ -287,7 +287,8 @@
       F.setU("scroll", lib.scroll + " px", lib.scroll, null);
       setLine(F.sum, "frame " + frames.toLocaleString("en-US"));
       setLine(l1, "draw(items): all " + count(items.length, "row"));
-      setLine(l2, still > 1 ? "nothing has changed for " + still.toLocaleString("en-US") + " frames" : "something changed this frame");
+      /* One sentence with its number last, so the words never move: only the digits change, and nothing swaps in for a single frame */
+      setLine(l2, "frames since anything changed: " + (still > 1 ? still : 0).toLocaleString("en-US"));
     }
     function frame() { queue.splice(0).forEach(act); draw(); }
     function loop() { raf = requestAnimationFrame(function () { if (!on) return; frame(); loop(); }); }

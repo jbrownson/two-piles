@@ -398,7 +398,7 @@ h2 .claim { font-weight: 300; color: var(--ink); }
 .u-in { border-bottom: 1px dashed currentColor; }
 .u-note { margin: 9px 0 0; font-size: 12.5px; font-weight: 500; line-height: 1.35; }
 /* What ran, or what reached the screen: one line each, in the pattern of the pile it touches */
-.patch-sum { font-size: 12.5px; font-weight: 500; }
+.patch-sum { font-size: 12.5px; font-weight: 500; font-variant-numeric: tabular-nums; }   /* a counter's digits keep their width, so the text doesn't jitter as it counts */
 .hline { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; padding: 6px 10px; }
 .hline.data { border-color: var(--data); background: var(--q-data), var(--panel); color: var(--ink); }
 .hline.view { border-color: var(--scr); background: var(--q-scr), var(--panel); color: var(--ink); }
