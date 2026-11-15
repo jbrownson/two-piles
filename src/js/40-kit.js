@@ -372,7 +372,9 @@
 
   /* ---------------------------------------------------------------------------------------------
      Puri: the same widgets, and no library store. Focus, caret, selection and scroll are plain data
-     that your code holds, wherever you like. Your handlers edit it, then the whole view reruns.
+     that your code holds, wherever you like. Each run of the view returns the picture and the handlers
+     for it. A widget's handler does the widget's work and calls back into your code to store the
+     result, then the whole view reruns.
      --------------------------------------------------------------------------------------------- */
   function PuriMachine(F) {
     var K = Kit(F), M = { pt: K.pt }, items = [], nextId = 9, home = "store", ui = null, hot = -1, tone = null, closed = false;
@@ -403,13 +405,16 @@
       else { ui.focus = i < 0 ? null : i + 1; if (i >= 0) ui.rows[i + 1] = { caret: c, anchor: a }; }
     }
     function setCaret(c, a) { var s = slot(); if (!s) return; s.caret = c; s.anchor = a == null ? c : a; }
-    function path() { return home === "store" ? "s" : home === "items" ? "s.items[i]" : "s.rows[i]"; }   /* `s` is the state: there is one of it */
-    function caretCode(expr) { return path() + ".caret = " + expr; }
-    function focusCode(expr) {
-      return home === "store" ? [["s.focus = s.items[i].id", "ui"], ["s.caret = " + expr, "ui"]]
-        : home === "items" ? [["s.items[i].caret = " + expr, "ui"]]
-        : [["s.focus = i", "ui"], ["s.rows[i].caret = " + expr, "ui"]];
+    /* What the lines say. `s` is the state: there is one of it. The caret and the selected range are one value,
+       the selection, and it is kept wherever the switch says the focus is kept. */
+    function path(at) { at = at || "i"; return home === "store" ? "s" : home === "items" ? "s.items[" + at + "]" : "s.rows[" + at + "]"; }
+    function selCode(expr, at) { return [path(at) + ".selection = " + (expr || "sel"), "ui"]; }
+    function textCode(wrote) { return ["s.items[i].text = text", wrote ? "data" : "same"]; }
+    function focusCode(expr, at) {
+      at = at || "i";
+      return (home === "store" ? [["s.focus = s.items[" + at + "].id", "ui"]] : home === "table" ? [["s.focus = " + at, "ui"]] : []).concat([selCode(expr, at)]);
     }
+    function box(i) { return "row " + (i + 1) + "’s text box"; }
 
     /* The panel shows your state, and lets you edit it */
     function numIn(id, label, min, fn) {
@@ -418,7 +423,7 @@
       i.addEventListener("input", function () { var v = parseInt(i.value, 10); if (!isNaN(v)) fn(Math.max(min, v)); });
       return i;
     }
-    function editCaret(v) { if (fRow() < 0) return; tone = null; setCaret(v); rerun("you edited it:", [[caretCode(String(v)), "ui"]], null, true); }
+    function editCaret(v) { if (fRow() < 0) return; tone = null; setCaret(v); rerun("you edited it:", [[path() + ".selection.caret = " + v, "ui"]], null, true); }
     function editFocus(v) { tone = null; ui.focus = Math.min(Math.max(1, v), Math.max(1, items.length)); if (ui.rows[ui.focus] == null) ui.rows[ui.focus] = { caret: 0, anchor: 0 }; F.setNote("", ""); rerun("you edited it:", [["s.focus = " + ui.focus, "ui"]], null, true); }
     function editScroll(v) { ui.scroll = Math.min(v, K.maxScroll()); rerun("you edited it:", [["s.scroll = " + ui.scroll, "ui"]], null, true); }
     function chip(dt) { var u = h("div", "u", null, F.ustate); var a = h("dt", null, dt, u), b = h("dd", null, null, u); return { u: u, dt: a, dd: b }; }
@@ -426,11 +431,11 @@
       F.ustate.textContent = ""; P = {}; F.where.textContent = WHERE[home];
       if (home === "items") { var e = h("div", "u empty", null, F.ustate); h("dt", null, "The focus, caret and selection are on the item.", e); }
       else {
-        P.focus = chip("focus"); P.caret = chip(home === "table" ? "row" : "caret");
-        if (home === "table") { P.focus.dd.appendChild(document.createTextNode("row ")); P.focusIn = numIn("puri-focus", "Focused row", 1, editFocus); P.focus.dd.appendChild(P.focusIn); P.caret.dd.appendChild(document.createTextNode("caret ")); }
+        P.focus = chip("focus"); P.sel = chip(home === "table" ? "row" : "selection"); P.sel.u.classList.add("u-wide");
+        if (home === "table") { P.focus.dd.appendChild(document.createTextNode("row ")); P.focusIn = numIn("puri-focus", "Focused row", 1, editFocus); P.focus.dd.appendChild(P.focusIn); }
         else P.focusText = h("span", null, "nothing", P.focus.dd);
-        P.caretIn = numIn("puri-caret", "Caret column", 0, editCaret); P.caret.dd.appendChild(P.caretIn);
-        P.sel = chip("selection"); P.selText = h("span", null, "none", P.sel.dd);
+        P.selText = h("span", "u-sel", "", P.sel.dd); P.sel.dd.appendChild(document.createTextNode("caret "));
+        P.caretIn = numIn("puri-caret", "Caret column", 0, editCaret); P.sel.dd.appendChild(P.caretIn);
       }
       P.scroll = chip("scroll"); P.scrollIn = numIn("puri-scroll", "How far the list is scrolled, in pixels", 0, editScroll);
       P.scroll.dd.appendChild(P.scrollIn); P.scroll.dd.appendChild(document.createTextNode(" px"));
@@ -441,13 +446,12 @@
       if (home !== "items") {
         if (P.focusText) P.focusText.textContent = i < 0 ? "nothing" : q(items[i].text);
         setIn(P.focusIn, ui.focus == null ? "" : ui.focus);
-        if (home === "table") P.caret.dt.textContent = ui.focus == null ? "row" : "row " + ui.focus;
+        if (home === "table") P.sel.dt.textContent = ui.focus == null ? "row" : "row " + ui.focus;
         setIn(P.caretIn, i < 0 && home !== "table" ? "" : c, i < 0 && home !== "table");
         var st = i < 0 ? "none" : selText(items[i].text, rawAnchor(), c);
-        P.selText.textContent = st;
+        P.selText.textContent = st === "none" ? "" : st;
         if (F.last.pf !== key) { F.last.pf = key; F.flash(P.focus.u); }
-        if (F.last.pc !== c) { F.last.pc = c; F.flash(P.caret.u); }
-        if (F.last.ps !== st) { F.last.ps = st; F.flash(P.sel.u); }
+        if (F.last.pc !== c + "|" + st) { F.last.pc = c + "|" + st; F.flash(P.sel.u); }
         P.focus.u.classList.toggle("bad", tone === "jumped");
       }
       setIn(P.scrollIn, ui.scroll);
@@ -455,9 +459,9 @@
       if (keepCards) return;
       F.cardsFor(items, at, at != null ? K.row(at) : null, home !== "items" ? null : function (li, it) {
         if (!it.ui) return;
-        var cu = h("span", "cu", "focus · caret ", li), inp = numIn("puri-caret", "Caret column", 0, editCaret);
+        var cu = h("span", "cu", "selection · caret ", li), inp = numIn("puri-caret", "Caret column", 0, editCaret);
         inp.value = String(it.ui.caret); cu.appendChild(inp);
-        if (it.ui.anchor != null && it.ui.anchor !== it.ui.caret) cu.appendChild(document.createTextNode(" · anchor " + it.ui.anchor));
+        if (it.ui.anchor != null && it.ui.anchor !== it.ui.caret) cu.appendChild(document.createTextNode(" · from " + it.ui.anchor));
       });
     }
     /* Every change ends the same way: rerun the whole view */
@@ -468,32 +472,38 @@
         scroll: ui.scroll
       });
       var ev = evAt; evAt = null;
-      if (name) F.lines(name, linked(name, lines, at, gap), { ev: ev, fire: true, linkSub: "all " + count(items.length, "row") });
+      if (name) F.lines(name, linked(name, lines, at, gap), { ev: ev, fire: true, linkSub: count(items.length, "row") + " + handlers" });
       show(at, keepCards);
     }
-    /* Each line of the handler with an arrow to what it wrote: a card of app state, or a slip of UI state
-       wherever you keep that. The view is the figure's standing link: it runs after every handler. */
+    /* What runs on an event is a handler the last view(state) returned, and most of them are a widget's own. The widget
+       works out what happened in its own terms (which column a click landed on, what a key does to the text and the
+       selection) and passes the result to the callback the view gave it. The callback is yours, and all it says is
+       where in the state that goes. So a run reads: the widget's line, then the lines of your callback. */
+    function handled(who, call, mine, lines, at, keepCards, gap) { rerun(who, [[call, "lib"], [mine, "sub"]].concat(lines), at, keepCards, gap); }
+    /* Each line that writes the state has an arrow to what it wrote: an item's card, or a slip, wherever the switch
+       keeps that. The view is the figure's standing link: it runs after every handler. */
     var evAt = null;   /* where in the window the event being handled happened */
     function rowY(r) { var d = K.row(r); if (!d) return null; var b = F.box(d); return b.t + b.h / 2; }
     function linked(name, lines, at, gap) {
       var mine = function () { var i = fRow(); return i >= 0 ? F.cards.children[i] : null; };   /* the card of the focused item */
       var slip = function (text) {
-        if (home === "items" && /^s\.items\[i\]\.(caret|anchor)/.test(text)) return function () { var c = mine(); return c ? c.querySelector(".cu") || c : null; };
+        if (home === "items" && /^s\.items\[[^\]]*\]\.selection/.test(text)) return function () { var c = mine(); return c ? c.querySelector(".cu") || c : null; };
         if (/scroll/.test(text)) return function () { return P.scroll ? P.scroll.u : null; };
         if (/focus/.test(text)) return function () { return P.focus ? P.focus.u : mine(); };
-        if (/anchor/.test(text)) return function () { return P.sel ? P.sel.u : mine(); };
-        return function () { return P.caret ? P.caret.u : mine(); };
+        return function () { return P.sel ? P.sel.u : mine(); };
       };
       var told = name === "you edited it:";   /* the reader changed the slip directly: nothing of the handler's to point at */
       var out = lines.map(function (L) {
         var link = told ? null : L[1] === "data" ? (name === "on launch:" ? { to: F.dataHead } : at != null ? { near: 1, to: function () { return F.cards.children[at]; } } : gap != null ? Object.assign({ near: 1 }, F.gapAt(gap)) : { to: F.dataHead })
           : L[1] === "ui" ? { to: name === "on launch:" ? F.ustate : slip(L[0]) } : L[1] === "missing" ? { to: slip(L[0]), miss: 1 } : null;
-        return [L[0], L[1] === "ui" ? "data" : L[1], L[1] === "data" || L[1] === "ui" ? "state" : L[1] === "missing" ? "state · left out" : "", "pile", link];   /* one state, so one colour: every line that runs edits it */
+        if (L[1] === "lib") return [L[0], "lib", "widget", "pile"];
+        if (L[1] === "same") return [L[0], "soft", "unchanged", "pile dim"];
+        return [L[0], L[1] === "ui" ? "data" : L[1], L[1] === "data" || L[1] === "ui" ? "state" : L[1] === "missing" ? "state · left out" : "", "pile", link];   /* one state, so one colour: every line that writes, writes it */
       });
       return out;
     }
     function del(r) {
-      var f = fRow(), was = f >= 0 ? items[f] : null, lines = [["s.items.remove(i)", "data"]];
+      var f = fRow(), was = f >= 0 ? items[f] : null, lines = [["s.items.remove(i)", "data"]], who = "row " + (r + 1) + "’s × button, on click:";
       if (evAt == null) evAt = rowY(r);
       F.headPulse(K.row(r));
       items.splice(r, 1);
@@ -505,52 +515,54 @@
       else if (!now) F.setNote("bad", "The focused item is gone, and no line says where the focus goes.");
       else if (now === was) F.setNote("good", home === "store" ? "Your focus names the item, so it followed." : home === "items" ? "The focus is on the item, so it went with it." : "The focus is still on its item.");
       else { tone = "jumped"; F.setNote("bad", "The state says row " + ui.focus + ". Row " + ui.focus + " is now " + q(now.text) + "."); }
-      rerun("on delete(i):", lines, null, false, r);
+      handled(who, "action(s)", "the action you gave it:", lines, null, false, r);
     }
     K.on = function (ev) {
       if (closed) return;
       if (ev.type === "hot") { hot = ev.row; K.setHot(hot); return; }
       evAt = ev.type === "scroll" ? F.host : ev.row != null ? rowY(ev.row) : fRow() >= 0 ? rowY(fRow()) : F.host;
-      if (ev.type === "scroll") { ui.scroll = ev.y; if (tone !== "jumped") F.setNote("", ""); rerun("on scroll(y):", [["s.scroll = y", "ui"]], null, true); return; }
+      if (ev.type === "scroll") { ui.scroll = ev.y; if (tone !== "jumped") F.setNote("", ""); handled("the list, on scroll:", "scroll(s, y)", "the scroll you gave it:", [["s.scroll = y", "ui"]], null, true); return; }
       var i = fRow();
       if (ev.type === "select") {
         tone = null; F.setNote("", "");
         var moved = i !== ev.row;
         setFocus(ev.row, ev.b, ev.a);
-        rerun("on select(i, a, b):", (moved && home !== "items" ? [[home === "store" ? "s.focus = s.items[i].id" : "s.focus = i", "ui"]] : []).concat(
-          [[path() + ".anchor = a", "ui"], [path() + ".caret = b", "ui"]]), null, home !== "items");
+        if (moved) handled(box(ev.row) + ", on drag:", "focus(s, drag(x0, x))", "the focus you gave it:", focusCode(), null, home !== "items");
+        else handled(box(ev.row) + ", on drag:", "change(s, text, drag(sel, x))", "the change you gave it:", [textCode(false), selCode()], null, home !== "items");
         return;
       }
       if (ev.type === "press") {
         if (ev.part === "x") { del(ev.row); return; }
         tone = null; F.setNote("", "");
-        if (ev.part === "text") { setFocus(ev.row, ev.col); rerun("on click(i, col):", focusCode("col")); }
-        else { items[ev.row].done = !items[ev.row].done; rerun("on tick(i):", [["s.items[i].done = !s.items[i].done", "data"]], ev.row); }
+        if (ev.part === "text") {   /* a box that has the focus was given `change`, and one that hasn't was given `focus` */
+          setFocus(ev.row, ev.col);
+          if (i === ev.row) handled(box(ev.row) + ", on click:", "change(s, text, caretAt(x))", "the change you gave it:", [textCode(false), selCode()]);
+          else handled(box(ev.row) + ", on click:", "focus(s, caretAt(x))", "the focus you gave it:", focusCode());
+        } else { items[ev.row].done = !items[ev.row].done; handled("row " + (ev.row + 1) + "’s checkbox, on click:", "toggle(s)", "the toggle you gave it:", [["s.items[i].done = !done", "data"]], ev.row); }
         return;
       }
       tone = null; F.setNote("", "");
-      if (i < 0) { if (items.length && ev.type === "key" && /^(ArrowDown|ArrowUp|Enter)$/.test(ev.key)) { setFocus(0, items[0].text.length); rerun("on key:", focusCode("end")); } return; }
+      if (i < 0) { if (items.length && ev.type === "key" && /^(ArrowDown|ArrowUp|Enter)$/.test(ev.key)) { setFocus(0, items[0].text.length); rerun("no widget took the key. Your handler:", focusCode("end", "0")); } return; }
       var it = items[i], c = caret(), an = anchor();
       if (ev.type === "key" && ev.key === "Enter") {
         items.splice(i + 1, 0, { id: nextId++, text: "", done: false }); setFocus(i + 1, 0);
-        rerun("on enter(i):", [["s.items.insert(i + 1, blank)", "data"]].concat(focusCode("0")), i + 1); return;
+        handled(box(i) + ", on key:", "submit(s)", "the submit you gave it:", [["s.items.insert(i + 1, blank)", "data"]].concat(focusCode("start", "i + 1")), i + 1); return;
       }
       if (ev.type === "key" && ev.key === "Backspace" && it.text === "") {
         F.headPulse(K.row(i)); items.splice(i, 1);
         if (items.length) { var p = Math.max(0, i - 1); setFocus(p, items[p].text.length); } else setFocus(-1);
-        rerun("on backspace(i):", [["s.items.remove(i)", "data"]].concat(focusCode("end")), null, false, i); return;
+        rerun("the text box passed. Your handler, on backspace:", [["s.items.remove(i)", "data"]].concat(focusCode("end", "i - 1")), null, false, i); return;
       }
       if (ev.type === "key" && (ev.key === "ArrowUp" || ev.key === "ArrowDown")) {
         var n = i + (ev.key === "ArrowUp" ? -1 : 1);
-        if (n >= 0 && n < items.length) { setFocus(n, Math.min(c, items[n].text.length)); rerun("on key:", focusCode("col")); }
+        if (n >= 0 && n < items.length) { setFocus(n, Math.min(c, items[n].text.length)); rerun("the text box passed. Your handler, on key:", focusCode("sel", n < i ? "i - 1" : "i + 1")); }
         return;
       }
       var r = editLine(it.text, c, ev, an);
       if (!r) return;
-      var lines = [];
-      if (r[0] !== it.text) { it.text = r[0]; lines.push(["s.items[i].text = edit(text, caret, key)", "data"]); }
-      setCaret(r[1], r[2]); lines.push([caretCode(r[1] === c + 1 ? "caret + 1" : r[1] === c - 1 ? "caret - 1" : String(r[1])), "ui"]);
-      rerun(ev.type === "text" ? "on input(i, key):" : "on key(i, key):", lines, lines.length > 1 ? i : null);
+      var wrote = r[0] !== it.text;
+      it.text = r[0]; setCaret(r[1], r[2]);
+      handled(box(i) + ", on key:", "change(s, edit(text, sel, key))", "the change you gave it:", [textCode(wrote), selCode()], wrote ? i : null);
     };
 
     /* What the script calls: the same input a reader's click or key sends, through the same door */
@@ -596,8 +608,8 @@
   }
 
   LiveFig("puri", {
-    kit: true, label: "To-do list, Puri", where: "", keeps: "yours", mach: "your handler",
-    link: { text: "view(state)", sub: "all 8 rows", from: function (F) { return [F.cards, F.ustate]; } },
+    kit: true, label: "To-do list, Puri", where: "", keeps: "yours", mach: "the handler view(state) returned",
+    link: { text: "view(state)", sub: "8 rows + handlers", from: function (F) { return [F.cards, F.ustate]; } },
     switches: [{ name: "home", label: "How the state holds the focus", options: [["store", "Focus by item id"], ["items", "Focus on the item"], ["table", "Focus by row"]] }],
     turn: "The app is live, and so is its state: change the caret’s number and the caret moves, or change the scroll’s and the list scrolls. The close box quits it and saves to disk, and the icon starts it again. Drag the slider to go back to the example.",
     machine: function (F) { return PuriMachine(F); },
@@ -606,14 +618,14 @@
         cap: function (k) {
           var home = F.m.home();
           return {
-            "1": "Click into “Fix scroll bug”. Your handler writes the focus and the caret into the state, and the view reruns.",
-            "2": "Type “today” at the end. Each key edits the state twice: the item’s text, and the caret.",
-            "3": "Select a word. Your handler writes the selection into the state, like any other value.",
+            "1": "Click into “Fix scroll bug”. The handler that runs is the text box’s own, returned by the last view. It finds the column you clicked and passes it to the callback you gave it, which stores it. Then the view reruns, and returns the next handlers.",
+            "2": "Type “today” at the end. The text box works out the new text and where the caret goes. Your callback only says where in the state they’re kept.",
+            "3": "Select a word. The text box follows the drag and reports it through the same callback as a key: the text, unchanged, and a new selection.",
             "4a": "Delete “Call Phil”, the row above yours.",
             "4": home === "store" ? "Delete “Call Phil”, the row above yours. The focus names the item by its id, so the caret and selection stay with it."
               : home === "items" ? "Delete “Call Phil”, the row above yours. The focus sits on the item itself, so it goes where the item goes."
-              : "Delete “Call Phil”, the row above yours. The state says row 3, and row 3 is now “Write essay”. It’s the same mismatch as before, and here it is one line in your own handler.",
-            "5": "Scroll. The scroll position is in the state as well: a number your handler writes and the view reads.",
+              : "Delete “Call Phil”, the row above yours. The state says row 3, and row 3 is now “Write essay”. It’s the same mismatch as before, and here it is one line in your own callback.",
+            "5": "Scroll. The list reports where it should be, and your callback stores that: a number in the state, which the view reads.",
             "6a": "Quit the app with its close box.",
             "6q": "Quit the app with its close box. One line saves the state, with the parts that shouldn’t outlive the app stripped out first.",
             "6": "Launch it again. The state is built back from what was saved. The focus, caret, selection and scroll start over, as in every figure above, and here that is your choice: strip() is yours."

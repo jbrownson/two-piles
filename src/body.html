@@ -98,7 +98,8 @@
     <div class="todo" role="note"><p class="todo-h">To write · Puri</p><ul>
       <li>Answers the first question directly: there is no separate UI state. Focus, caret, selection and scroll are fields of your one state, so how they’re held is your choice, the way layout is.</li>
       <li>A key message: perhaps the biggest cost of the approaches above is that each place state is stored needs an identity that stays the same from one frame to the next. Keys and IDs are that cost. Puri doesn’t make the need go away. It makes it explicit, and yours to answer in the way that suits your app: on the item, in a keyed store, by position with care, or with a general system plugged in.</li>
-      <li>The figure’s switch is that choice. Its third setting, a table by row, fails the way position keys fail, and the fix is one line in your own handler.</li>
+      <li>The figure’s switch is that choice. Its third setting, a table by row, fails the way position keys fail, and the fix is one line in your own callback.</li>
+      <li>Keeping no state doesn’t mean the widgets do less. Each one returns its picture and a handler, good until the next rerun. The handler does the widget’s work (which column a click landed on, what a key does to the text and the selection) and passes the result to a callback you gave it. Your callback only says where in the state it goes.</li>
       <li>An objection worth quoting: “immediate mode libraries that shunt all state management onto the application are out of the question.” A reply: you pick a store, and it can be the same keyed table. The widgets just don’t pick for you.</li>
       <li>Another: web developers have tried “everything in the store”, and many moved away from it. What’s different here: this goes down to the caret, and plumbing is cheap to write now. Check that history before publishing.</li>
       <li>It merges the piles: there is one state, drawn in one colour. What the approaches above call UI state is here just the part you strip out when you save and build back when you load.</li>
@@ -108,9 +109,9 @@
     <div class="fig" data-fig="puri"></div>
     <dl class="verdict">
       <div class="q1"><dt>UI state</dt><dd>Nowhere separate. Widgets keep none, so focus, caret, selection and scroll are fields of your one state, shaped however suits the app.</dd></div>
-      <div class="q2"><dt>Changes</dt><dd>Your handler edits your data, and the whole view is rerun.</dd></div>
+      <div class="q2"><dt>Changes</dt><dd>Each widget returns a handler with its picture. On an event the handler works out the change and passes it to your callback, which writes your state, and the whole view is rerun.</dd></div>
       <div class="plus"><dt>Strength</dt><dd>One state. It can be tested, saved in one line with whatever you choose stripped out, and managed however you like. How its parts are tied to your data is your decision, in the open, not a key or an ID the toolkit asks for.</dd></div>
-      <div class="minus"><dt>Trade-off</dt><dd>Each handler now writes everything the widgets used to keep for you, the caret included. And widgets that draw themselves give up what the platform’s text boxes provide, such as accessibility and input methods.</dd></div>
+      <div class="minus"><dt>Trade-off</dt><dd>Everything the widgets used to keep for you now needs a place in your state and a callback that writes it there, the caret included. And widgets that draw themselves give up what the platform’s text boxes provide, such as accessibility and input methods.</dd></div>
     </dl>
     <p class="cap">That first trade-off, a hand-written edit for every part of the state a change touches, is where <a href="#era-deui">deui</a> starts.</p>
   </section>
