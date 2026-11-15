@@ -128,7 +128,7 @@
       <li>Credit Phil Freeman’s PureScript Purview (2017–18), and the story of where the idea came from.</li>
     </ul></div>
     <div class="fig" data-fig="deui"></div>
-    <p class="cap">In this figure the derivative is hand-written JavaScript, and the check reruns the view after every change to compare. In lean-puri the check is a proof, done once, before the program runs.</p>
+    <p class="cap">In this figure the derivative is hand-written JavaScript, and the check reruns the view after every change to compare. In a proved version the check is a proof, done once, before the program runs. lean-puri is one.</p>
     <dl class="verdict">
       <div class="q1"><dt>UI state</dt><dd>Nowhere separate: in your one state, as in Puri.</dd></div>
       <div class="q2"><dt>Changes</dt><dd>Each change is kept as a value. A derivative turns it into the edits to the screen, and a proof shows the result equals a rerun.</dd></div>
@@ -141,17 +141,18 @@
   <section class="era proposal" data-fig="proof">
     <div class="era-head"><h2><span class="case">Why now<span class="colon">: </span></span><span class="claim">you read the spec and the law</span></h2></div>
     <div class="todo" role="note"><p class="todo-h">To write · why now</p><ul>
-      <li>Derivatives are tedious, mechanical code. An LLM writes them and Lean checks the law, so you don’t have to trust whoever wrote them.</li>
+      <li>Derivatives are tedious, mechanical code. An LLM writes them and a proof checker checks the law, so you don’t have to trust whoever wrote them.</li>
+      <li>This isn’t specific to one prover. Any proof system would do. Lean and Bend are probably the two realistic candidates today.</li>
       <li>The evidence: lean-puri, a scrolling list of 10,000 items. Per its README, a frame takes 17.3 ms drawn whole and 0.27 ms from the change, and the derivative itself takes microseconds.</li>
       <li>Limits, said plainly: the proof covers correctness, not speed (lean-puri had a proven derivative that stayed slow until commit 5bda7e2), and so far it covers one widget.</li>
       <li>The open question to hand to readers: do derivatives of real layout, like wrapping text and nested boxes, stay tractable?</li>
     </ul></div>
-    <div class="stage"><svg viewBox="0 0 960 400" role="img" aria-label="A three-line spec you write, a long scrolling proof an LLM writes, and a seal where Lean checks the law. Breaking the derivative turns the seal red."></svg></div>
+    <div class="stage"><svg viewBox="0 0 960 400" role="img" aria-label="A three-line spec you write, a long scrolling proof an LLM writes, and a seal where a proof checker checks the law. Breaking the derivative turns the seal red."></svg></div>
     <div class="ctrl">
       <button class="btn go" type="button" data-act="play">Check it</button>
       <button class="btn" type="button" data-act="break" aria-pressed="false">Break the derivative</button>
     </div>
-    <p class="cap">An LLM writes the derivative and its proof, and Lean checks one law: applying the derivative’s change equals recomputing from scratch. Breaking it here is an illustration; the real proof is lean-puri’s Scroll.lean.</p>
+    <p class="cap">An LLM writes the derivative and its proof, and a proof checker checks one law: applying the derivative’s change equals recomputing from scratch. Breaking it here is an illustration. The proof shown is a real one, lean-puri’s Scroll.lean, checked by Lean.</p>
   </section>
 
   <section class="era" aria-labelledby="end-h">
@@ -170,7 +171,7 @@
       <li>The two questions travel. They can be put to any framework, old or new: where does UI state live, and how does the screen learn what changed?</li>
       <li>A line to land: retained mode had the right idea, updating the screen from the change. What it lacked was a way to know the update was right.</li>
       <li>What you don’t know yet, as an invitation.</li>
-      <li>The prototypes (progred, roc-puri, lean-puri), and how to reach you.</li>
+      <li>The prototypes (progred, roc-puri, lean-puri, bend-puri), and how to reach you.</li>
     </ul></div>
     <p class="foot">Draft 5. The figures are small models written for this page. Timings and line counts come from lean-puri’s README and source.</p>
   </section>

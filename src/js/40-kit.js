@@ -626,7 +626,7 @@
   /* ---------------------------------------------------------------------------------------------
      deui: every action is a change, a small value. A derivative turns the change into edits to
      the screen and to UI state, and nothing is rerun. The law says the result must equal a rerun.
-     Here that is checked after each change, as an illustration. In lean-puri it is proved.
+     Here that is checked after each change, as an illustration. In a proved version it is a proof, checked before the program runs.
      --------------------------------------------------------------------------------------------- */
   function DeuiMachine(F) {
     var K = Kit(F), M = { pt: K.pt }, items = [], nextId = 9, ui = { focus: null, caret: 0, anchor: 0, scroll: 0 }, policy = "next", broken = false, wrong = false, closed = false;
@@ -734,7 +734,7 @@
       if (broken && ch.type === "del") lines.push(["remove row " + (r + 1), "missing", "left out", "pile", { to: F.win, toY: gone, miss: 1, side: "r" }, 2]);
       lines.push(bad ? ["✗ " + bad, "bad", "", "", null, 2] : ["✓ same as rerunning the view", "good", "", "", null, 2]);
       wrong = !!bad;
-      if (bad) F.setNote("bad", "The screen is wrong now. In lean-puri this derivative would be rejected before it ever ran.");
+      if (bad) F.setNote("bad", "The screen is wrong now. With a proof checker, this derivative would be rejected before it ever ran.");
       F.lines("on " + (ch.type === "scroll" ? "scroll" : ch.type === "select" ? "select" : by) + ": one change", lines, { ev: ev, cross: true, sum2: count(scr.length, "edit") + " · reran 0 rows" });
       panel();
       if (data) F.cardsFor(items, at, at != null ? K.row(at) : null);

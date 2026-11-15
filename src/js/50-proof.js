@@ -30,7 +30,7 @@
     tx(L, 472, 370, "Scroll.lean · 1,174 lines", "count soft", "middle");
     el("path", { d: "M318 160 L 364 160", "class": "guide" }, L);
     el("path", { d: "M580 176 L 694 176", "class": "guide" }, L);
-    tx(L, 760, 80, "Lean checks the law", "lab good", "middle");
+    tx(L, 760, 80, "a prover checks the law", "lab good", "middle");
     var seal = el("g", { "class": "seal" }, L);
     el("circle", { cx: 760, cy: 176, r: 58, "class": "seal-c" }, seal);
     el("path", { d: "M733 178 L753 198 L790 158", "class": "seal-ok" }, seal);
