@@ -248,7 +248,7 @@
     F.diskEl = hd;   /* the disk on the desktop, for the arrows from what is saved on quitting */
     F.running = function (on) { stage.classList.toggle("running", !!on); };   /* frames are being drawn: the arrow that never stops is moving */
 
-    var machFloor = 0, mach2Floor = 0, links = null, sparks = [], sparkFresh = false, linkDue = false, linkGen = 0, lastSig = "", lastRunAt = 0, trailT = 0, BURST = 350, flashQ = [], SLOWX = window.__twoPilesSlow || 1;
+    var machFloor = 0, mach2Floor = 0, links = null, sparks = [], sparkFresh = false, linkDue = false, linkGen = 0, lastSig = "", shown = {}, flying = {}, era = 0, pulses = null, drawn = null, flashQ = [], SLOWX = window.__twoPilesSlow || 1;
     function linkSoon() { if (linkDue) return; linkDue = true; Promise.resolve().then(function () { linkDue = false; drawLinks(false); }); }
     function res(x) { x = typeof x === "function" ? x() : x; return x && x.nodeType ? (x.isConnected ? x : null) : x; }
     function rect(x) {
@@ -319,25 +319,26 @@
       el("path", { d: pathOf([b, [base[0] - dy * hw, base[1] + dx * hw], [base[0] + dy * hw, base[1] - dx * hw]]) + " Z", "class": "ah" }, g);
       return pathOf(body);
     }
-    /* Draw every arrow. Those that have just happened are drawn one after another, each line of code showing
-       as its turn comes. The rest (a new width, a step reached with the slider) just appear.
-       Input can come faster than that can be shown: typing, a drag, a scroll. Starting over on every key would hide
-       the lines and bring them back many times a second. So a run that comes within BURST of the one before just
-       appears, and once nothing more has come for that long, what is showing is traced once (`echo`). And a run with
-       the same lines as the one before hides nothing: the lines stay, and the arrows are traced over (`calm`). */
-    function drawLinks(again, echo) {
-      var gen = ++linkGen, spec = links, now = performance.now(), steps = [], lanes = {};
-      var fresh = !again && !echo && !!spec && spec.fresh && !spec.quiet, sig = spec ? (spec.sum + "|" + spec.lines.map(function (L) { return L[0] + L[1]; }).join("|")).replace(/“[^”]*”|\d+/g, "") : "";   /* the same lines with other values in them (another row, another column, another letter) count as the same */
-      var live = !reduce && (fresh || (!!echo && !!spec && !spec.quiet)), calm = !!echo || (fresh && sig === lastSig);
-      if (fresh) {
-        clearTimeout(trailT);
-        if (live && now - lastRunAt < BURST * SLOWX) { live = false; trailT = setTimeout(function () { if (links === spec && !F.quiet && root.isConnected) drawLinks(false, true); }, BURST * SLOWX); }
-        lastRunAt = now; lastSig = sig;
-      }
+    /* Draw every arrow, and show what has just run.
+       The lines and arrows of a run show one after another: a line appears as its turn comes, a square runs along
+       its arrow, the arrow is drawn behind it, and what it reaches lights up. That walk is a chain (below).
+       Input can come faster than a chain can finish: typing, a drag, a scroll. So nothing here starts over.
+       What has been shown stays shown (`shown`, by step) for as long as runs with the same lines keep coming, however
+       often the page is redrawn under it. Every run starts a chain of its own, and a chain that finds its step already
+       showing only sends the square. A run with different lines begins again from nothing (a new `era`), and the
+       chains before it stop where they are. */
+    function drawLinks(again) {
+      var gen = ++linkGen, spec = links, steps = [], lanes = {};
+      var fresh = !again && !!spec && spec.fresh, moving = !reduce && !!spec && !spec.quiet;
+      var sig = spec ? (spec.sum + "|" + spec.lines.map(function (L) { return L[0] + L[1]; }).join("|")).replace(/“[^”]*”|\d+/g, "") : "";   /* the same lines with other values in them (another row, another column, another letter) count as the same */
       if (spec) spec.fresh = false;
+      if (fresh && (sig !== lastSig || !moving)) { era++; shown = {}; flying = {}; if (pulses) pulses.textContent = ""; }
+      if (fresh) lastSig = sig;
+      function has(key) { return !moving || !!shown[key]; }
       var sparking = !again && !reduce && sparkFresh; sparkFresh = false;
+      if (!pulses) pulses = el("g", null, ax);   /* the squares on their way: they outlast a redraw */
       ax.textContent = "";
-      var g0 = el("g", null, ax), gx = el("g", null, ax);
+      var g0 = el("g", null, ax); ax.appendChild(pulses);
       function lane(key, wide) { var k = lanes[key] || 0; lanes[key] = k + (wide ? 2 : 1); return wide ? k + 0.5 : k; }   /* arrows that share a gutter or a margin each get their own track, and a wide one takes two */
       function make(a) {   /* an arrow's drawing, or nothing if either end isn't on the page */
         if (a.pts) {   /* a way given point by point, for an arrow that has to go round something */
@@ -379,21 +380,21 @@
       function crossArrow(ghost) { return { from: F.mach, to: F.mach2, fromY: F.crossLabel, toY: F.crossLabel, dy: cfg.cross.dy || 22, c: "scr", ghost: ghost }; }   /* level, beside its name */
       function colour(kind) { return kind === "data" ? "data" : kind === "view" ? "scr" : kind === "ui" ? "ui" : kind === "missing" ? "bad" : "ink"; }
       if (spec) {
-        if (spec.ev != null) steps.push({ line: F.sum, arrows: [make({ from: win, to: F.sum, fromY: function () { return yOf(spec.ev, null) - 7; }, side: "l", c: "ink" })] });
-        else steps.push({ line: F.sum, arrows: [] });
+        if (spec.ev != null) steps.push({ key: "S", line: F.sum, arrows: [make({ from: win, to: F.sum, fromY: function () { return yOf(spec.ev, null) - 7; }, side: "l", c: "ink" })] });
+        else steps.push({ key: "S", line: F.sum, arrows: [] });
         var crossed = !F.sum2, crossing = function () {   /* from the first panel to the second: its summary shows, and the link between them runs if this run fired it */
           if (crossed) return; crossed = true;
-          steps.push({ line: F.sum2, arrows: cfg.cross && spec.cross ? [make(stacked() ? { from: F.mach, to: F.sum2, c: "scr", side: "l" } : crossArrow(false))] : [] });
+          steps.push({ key: "X", line: F.sum2, arrows: cfg.cross && spec.cross ? [make(stacked() ? { from: F.mach, to: F.sum2, c: "scr", side: "l" } : crossArrow(false))] : [] });
         };
         /* Arrows given as a function are worked out when their step is reached, not before: by then whatever was still moving when the run began has come to rest */
-        var mores = spec.more.slice(), moreStep = function (m) { var fn = typeof m.arrows === "function" ? m.arrows : null; steps.push({ line: null, arrows: fn && live ? [] : (fn ? fn() : m.arrows || []).map(make), lazy: fn && live ? fn : null, run: m.run, gap: m.gap }); };
+        var mores = spec.more.slice(), moreStep = function (m) { var key = "M" + spec.more.indexOf(m), fn = typeof m.arrows === "function" ? m.arrows : null, later = fn && !has(key + "!"); steps.push({ key: key, line: null, arrows: later ? [] : (fn ? fn() : m.arrows || []).map(make), lazy: later ? fn : null, run: m.run, gap: m.gap }); };
         spec.lines.forEach(function (L, i) {
           mores = mores.filter(function (m) { if (m.at == null || m.at > i) return true; moreStep(m); return false; });
           if (L[5] === 2) crossing();
-          var k = L[4], line = spec.els[i], c = k && k.c ? k.c : colour(L[1]), st = { line: line, arrows: [] };
+          var k = L[4], line = spec.els[i], c = k && k.c ? k.c : colour(L[1]), st = { key: "L" + i, line: line, arrows: [] };
           if (k && k.from) st.arrows.push(make({ from: k.from, to: line, c: c, wide: k.wide, run: k.run, side: "l" }));
           steps.push(st);
-          if (k && k.to) (k.from ? steps[steps.push({ line: null, arrows: [] }) - 1] : st).arrows.push(make({ from: line, to: k.to, toY: k.toY, comb: k.comb, clip: k.clip, c: c, wide: k.wide, miss: k.miss, run: k.run, then: k.then, side: k.side, near: k.near, dy: k.dy }));
+          if (k && k.to) (k.from ? steps[steps.push({ key: "T" + i, line: null, arrows: [] }) - 1] : st).arrows.push(make({ from: line, to: k.to, toY: k.toY, comb: k.comb, clip: k.clip, c: c, wide: k.wide, miss: k.miss, run: k.run, then: k.then, side: k.side, near: k.near, dy: k.dy }));
         });
       }
       if (spec) { crossing(); mores.forEach(moreStep); }
@@ -409,45 +410,70 @@
         if (stacked()) parts = fired ? [{ from: lk.from, to: F.linkLabel, wide: 1, c: "scr", side: "l" }, { from: F.linkLabel, to: win, wide: 1, c: "scr" }] : [];
         else { lk.fromY = F.linkLabel; lk.toY = F.linkLabel; lk.dy = cfg.link.dy || 21; lk.ghost = !fired; parts = [lk]; }
         if (F.linkLabel) F.linkLabel.classList.toggle("on", !!fired);
-        if (fired) { var ls = { line: null, arrows: parts.map(make) }; if (spec.fire === "first") steps.splice(1, 0, ls); else steps.push(ls); }
+        if (fired) { var ls = { key: "F", line: null, arrows: parts.map(make) }; if (spec.fire === "first") steps.splice(1, 0, ls); else steps.push(ls); }
         else parts.forEach(make);
       }
       var extra = sparks.map(function (a) { return make(a); }).filter(Boolean);
-      steps.forEach(function (st) { st.arrows = st.arrows.filter(Boolean); });
+      /* What isn't showing yet waits for a chain to reach it. What is showing has happened: its `then` and `run` are called here. */
+      function dress(st) {
+        var done = has(st.key + "!");
+        st.arrows = st.arrows.filter(Boolean);
+        st.arrows.forEach(function (a, j) { a.key = st.key + "#" + j; if (done || has(a.key)) { if (a.then) a.then(); } else a.g.classList.add("wait"); });
+      }
+      steps.forEach(function (st) {
+        dress(st);
+        if (st.line) st.line.classList.toggle("wait", !has(st.key));
+        if (st.run && has(st.key + "!")) st.run(false);
+        if (!moving) { shown[st.key] = shown[st.key + "!"] = 1; st.arrows.forEach(function (a) { shown[a.key] = 1; }); }   /* put there without being walked through: a run with the same lines after it has nothing to bring in */
+      });
       /* Flashes that were asked for: an arrow on its way will light its own target when it lands. The others go now. */
       var coming = [];
-      if (live) steps.forEach(function (st) { st.arrows.forEach(function (a) { coming = coming.concat(a.hit); }); });
+      if (fresh && moving) steps.forEach(function (st) { st.arrows.forEach(function (a) { coming = coming.concat(a.hit); }); });
       if (sparking) extra.forEach(function (a) { coming = coming.concat(a.hit); });
       flashQ.splice(0).forEach(function (n) { if (n.isConnected && !coming.some(function (t) { return t === n || t.contains(n) || n.contains(t); })) flashNow(n); });
-      function trace(a) {   /* a square runs along the arrow, drawing it */
-        if (a.miss) { a.g.classList.remove("wait"); return Promise.resolve(); }
-        return Promise.all(a.traces.map(function (d) {
-          var p = el("path", { d: d, "class": "az" + (a.wide ? " wide" : "") }, gx), L = p.getTotalLength(), dot = a.wide ? null : el("rect", { width: 7, height: 7 }, gx);
-          p.style.stroke = "var(--" + a.c + ")"; p.style.strokeDasharray = L + " " + L; p.style.strokeDashoffset = L;
-          if (dot) dot.style.fill = "var(--" + a.c + ")";
-          return tween(Math.max(140, Math.min(300, 90 + L * 0.9)) * SLOWX, function (u) {
-            if (!p.isConnected) return;
-            if (dot) { var q = p.getPointAtLength(L * u); dot.setAttribute("x", q.x - 3.5); dot.setAttribute("y", q.y - 3.5); }
-            p.style.strokeDashoffset = L * (1 - u);
-          }).then(function () { if (dot) dot.remove(); p.remove(); });
-        })).then(function () { if (a.then && !echo) a.then(); if (gen !== linkGen) return; a.g.classList.remove("wait"); a.hit.forEach(function (n) { if (n.isConnected) flashNow(n); }); });
-      }
-      /* Not animated: everything is simply there. That includes any line an earlier, animated drawing had not got round to showing. */
-      if (!live) steps.forEach(function (st) { if (st.line) st.line.classList.remove("wait"); st.arrows.forEach(function (a) { if (a.then) a.then(); }); if (st.run) st.run(false); });
-      if (live) {
-        if (!calm) steps.forEach(function (st) { if (st.line) st.line.classList.add("wait"); st.arrows.forEach(function (a) { a.g.classList.add("wait"); }); });
-        var i = 0;
-        (function next() {
-          if (gen !== linkGen || i >= steps.length) return;
-          var st = steps[i++];
-          if (st.lazy) { st.arrows = st.lazy().map(make).filter(Boolean); if (!calm) st.arrows.forEach(function (a) { a.g.classList.add("wait"); }); }
-          if (st.line) st.line.classList.remove("wait");
-          var go = function () { if (st.run && gen === linkGen && !echo) st.run(true); next(); };
-          if (st.arrows.some(function (a) { return a.traces.length && !a.miss; })) Promise.all(st.arrows.map(trace)).then(go);
-          else { st.arrows.forEach(function (a) { a.g.classList.remove("wait"); }); setTimeout(go, (st.gap != null ? st.gap : i === 1 ? 0 : 60) * SLOWX); }
-        })();
-      }
-      if (sparking) extra.forEach(function (a) { a.g.classList.add("wait"); trace(a); });
+      drawn = { era: era, steps: steps, make: make, dress: dress, moving: moving };
+      if (fresh && moving) chain();
+      extra.forEach(function (a, j) { a.key = "K" + gen + "#" + j; if (!sparking) return; a.g.classList.add("wait"); if (a.miss || !a.traces.length) show(a); else send(a); });
+    }
+    /* One run, shown a step at a time. It works on the page as it is drawn when each step comes round, since the
+       page may have been redrawn while a square was on its way. */
+    function chain() {
+      var mine = era, i = 0;
+      function at(k) { return drawn && drawn.moving && drawn.era === mine && root.isConnected ? drawn.steps[k] : null; }
+      function ready(st) { if (st.lazy) { st.arrows = st.lazy().map(drawn.make); st.lazy = null; drawn.dress(st); } return st; }
+      (function next() {
+        var k = i++, st = at(k);
+        if (!st) return;
+        ready(st);
+        if (st.line) st.line.classList.remove("wait");
+        shown[st.key] = 1;
+        var movers = st.arrows.filter(function (a) { if (a.miss || !a.traces.length) { show(a); return false; } return true; });
+        var land = function () {
+          var now = at(k);
+          if (!now) return;
+          ready(now).arrows.forEach(show);
+          if (!shown[now.key + "!"]) { shown[now.key + "!"] = 1; if (now.run) now.run(true); }
+          next();
+        };
+        if (movers.length) Promise.all(movers.map(send)).then(land);
+        else setTimeout(land, (st.gap != null ? st.gap : k === 0 ? 0 : 60) * SLOWX);
+      })();
+    }
+    function show(a) { if (shown[a.key]) return; shown[a.key] = 1; a.g.classList.remove("wait"); if (a.then) a.then(); }
+    /* A square runs along an arrow, drawing it if it isn't drawn yet. One square at a time on any one arrow: a run
+       that comes while one is on its way waits for that one, so a burst of input reads as steady traffic. */
+    function send(a) {
+      return Promise.all(a.traces.map(function (d) {
+        if (flying[d]) return flying[d];
+        var mine = era, p = el("path", { d: d, "class": "az" + (a.wide ? " wide" : "") }, pulses), L = p.getTotalLength(), dot = a.wide ? null : el("rect", { width: 7, height: 7 }, pulses);
+        p.style.stroke = "var(--" + a.c + ")"; p.style.strokeDasharray = L + " " + L; p.style.strokeDashoffset = L;
+        if (dot) dot.style.fill = "var(--" + a.c + ")";
+        return flying[d] = tween(Math.max(140, Math.min(300, 90 + L * 0.9)) * SLOWX, function (u) {
+          if (!p.isConnected) return;
+          if (dot) { var q = p.getPointAtLength(L * u); dot.setAttribute("x", q.x - 3.5); dot.setAttribute("y", q.y - 3.5); }
+          p.style.strokeDashoffset = L * (1 - u);
+        }).then(function () { if (dot) dot.remove(); p.remove(); if (mine === era) delete flying[d]; });
+      })).then(function () { if (a.g.isConnected) show(a); a.hit.forEach(function (n) { if (n.isConnected) flashNow(n); }); });
     }
     F.cardsOff = function () { F.cards.textContent = ""; };
     F.resetPanels = function () {
