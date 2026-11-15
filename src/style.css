@@ -1,0 +1,793 @@
+/* Layout: short sections in a reading column; each figure breaks wide. One color per idea, the same in every figure: amber = app state, violet = UI state, teal = a change to the screen, green = checked, red = wrong. */
+
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); }
+.page {
+  max-width: 1100px; margin: 0 auto; display: grid; gap: 104px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 48px 104px;
+}
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+h2 .case, h2 .claim { display: block; }
+.colon { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+h3 { font-size: 19px; font-weight: 720; line-height: 1.2; letter-spacing: -0.01em; }
+p { margin: 0; }
+.lede { font-family: var(--font-display); }
+.title { display: grid; }
+.timeline { list-style: none; margin: 10px 0 0; padding: 0; position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.timeline li { position: relative; min-width: 0; }
+.timeline li::after { content: ""; position: absolute; left: 50%; right: calc(-50% - 20px); }
+.timeline li:last-child::after { display: none; }
+.timeline a { display: grid; gap: 4px; padding-top: 34px; color: inherit; text-decoration: none; border-radius: 8px; justify-items: center; text-align: center; }
+.verdict { margin: 0; display: grid; max-width: 66ch; }
+.verdict div { display: grid; align-items: baseline; }
+.verdict dd { margin: 0; line-height: 1.5; color: var(--soft); }
+.verdict .works dt { color: var(--good); }
+.verdict .next dt { color: var(--ink); }
+.verdict a { color: var(--ink); text-underline-offset: 3px; }
+.timeline a:focus-visible { outline: 2.5px solid var(--ui); outline-offset: 6px; }
+@media (max-width: 720px) {
+  .timeline { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .timeline li::after { right: auto; bottom: -22px; }
+  .timeline a { padding-top: 0; padding-left: 38px; justify-items: start; text-align: left; }
+}
+.era { display: grid; gap: 22px; }
+.era-head { display: grid; gap: 12px; }
+.cap { max-width: 62ch; color: var(--soft); line-height: 1.55; }
+.todo { max-width: 66ch; border-radius: 0 14px 14px 0; }
+.todo-h { margin: 0 0 6px; font-family: var(--font-mono); text-transform: uppercase; }
+.todo ul { margin: 0; padding-left: 1.15em; display: grid; gap: 5px; }
+.todo li { line-height: 1.45; }
+.todo li::marker { color: var(--soft); }
+.stage { border-radius: 26px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.stage svg { display: block; width: 100%; min-width: 700px; height: auto; }
+.ctrl { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn {
+  font-family: var(--font-display); letter-spacing: -0.005em; border-radius: 999px; color: var(--ink); cursor: pointer;
+}
+.btn.go { border-color: var(--ink); }
+.btn:disabled { opacity: .4; cursor: default; border-color: var(--faint); }
+.btn:focus-visible, .seg button:focus-visible { outline: 2.5px solid var(--ui); outline-offset: 2px; }
+.seg { display: inline-flex; border-radius: 999px; flex-wrap: wrap; }
+.seg button {
+  font-family: var(--font-display); border: 0; border-radius: 999px; background: transparent; cursor: pointer;
+}
+.busy .ctrl button { opacity: .5; pointer-events: none; }
+
+
+/* Live demo */
+.demo {
+  position: relative; display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr); border-radius: 26px;
+}
+.pile-h { transition: color .6s ease; }
+.data-pile .pile-h { color: var(--data-ink); }
+.ui-pile .pile-h { color: var(--ui-ink); }
+.data-pile .pile-h.flash { transition: none; }
+.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cards li {
+  display: flex; align-items: center; min-width: 0; padding: 7px 14px; border-radius: 999px; color: var(--data-ink); font-family: var(--font-mono); font-size: 13px;
+  transition: background .7s ease, color .7s ease;
+}
+.cards .d { flex: none; border-radius: 50%; }
+.cards .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cards li.done .t { text-decoration: line-through; }
+.ustate { margin: 0; display: grid; gap: 8px; }
+.u {
+  display: flex; justify-content: space-between; min-width: 0;
+  padding: 7px 14px; border-radius: 999px; color: var(--ui-ink);
+  transition: background .7s ease, color .7s ease;
+}
+.u dt { font-family: var(--font-mono); white-space: nowrap; }
+.u dd { margin: 0; min-width: 0; font-family: var(--font-display); font-size: 14.5px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.u dd.ticks { display: flex; align-items: center; align-self: center; }
+.tick { display: inline-block; flex: none; border-radius: 2px; }
+.app-win { border-radius: 18px; overflow: hidden; }
+.app-bar { display: flex; }
+.app-bar i { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.app-list { list-style: none; margin: 0; height: 240px; overflow-y: auto; scrollbar-width: thin; }
+.app-list::-webkit-scrollbar { width: 6px; }
+.app-list::-webkit-scrollbar-thumb { border-radius: 3px; }
+.app-list li { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 8px 0 12px; border-radius: 10px; }
+.app-list li:hover { background: var(--hair); }
+.app-list li:focus-within { background: var(--ui-tint); box-shadow: inset 0 0 0 2px var(--ui); }
+.app-list input[type="text"] {
+  flex: 1; min-width: 0; border: 0; outline: none; background: transparent; padding: 6px 2px;
+  font-family: var(--font-display); font-size: 15.5px; font-weight: 500; color: var(--row); caret-color: var(--ui);
+}
+.app-list input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none; flex: none; width: 17px; height: 17px; margin: 0; cursor: pointer;
+  border-radius: 50%; border: 1.5px solid var(--soft); background: transparent;
+}
+.app-list input[type="checkbox"]:checked { background: var(--data); border-color: var(--data); }
+.app-list input[type="checkbox"]:focus-visible { outline: 2px solid var(--ui); outline-offset: 2px; }
+.app-list li.done input[type="text"] { text-decoration: line-through; color: var(--soft); }
+.app-list .x { flex: none; opacity: 0; border: 0; background: transparent; color: var(--soft); font-size: 19px; line-height: 1; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
+.app-list li:hover .x, .app-list li:focus-within .x { opacity: 1; }
+.app-list .x:focus-visible { opacity: 1; outline: 2px solid var(--ui); }
+.app-list .empty { justify-content: center; }
+.app-list .add { border: 0; background: transparent; font-family: var(--font-display); font-size: 15px; font-weight: 650; color: var(--ui-ink); cursor: pointer; }
+.app-foot { font-family: var(--font-mono); color: var(--soft); margin: 0; }
+.demo-fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.ripple { fill: none; stroke: var(--ui); }
+.ghost-ptr { position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0; transition: opacity .3s ease; z-index: 3; }
+.ghost-ptr svg { display: block; }
+.ghost-ptr path { fill: var(--ink); stroke: var(--panel); stroke-width: 1.5; stroke-linejoin: round; }
+@media (max-width: 760px) {
+  .demo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .demo .app { grid-column: 1 / -1; order: -1; }
+}
+/* Live figures: the same app, different machinery */
+.u-note { min-height: 2.6em; font-family: var(--font-display); }
+.u-note.good { color: var(--good); }
+.u-note.bad { color: var(--bad); }
+.app-list li.hot { background: var(--hair); }
+.app-list li.hot .x { opacity: 1; }
+.app-list li.rewrote:not(:focus-within) { background: var(--scr-tint); }
+.app-list li.jumped, .app-list li.jumped:focus-within { background: var(--bad-tint); box-shadow: inset 0 0 0 2px var(--bad); }
+.scrub { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+.scrub-btn { flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: var(--ink); color: var(--bg); cursor: pointer; }
+.scrub-btn svg { display: block; fill: currentColor; }
+.scrub-btn .i-pause, .scrub-btn.playing .i-play { display: none; }
+.scrub-btn.playing .i-pause { display: inline; }
+.scrub-btn:focus-visible, .scrub-track:focus-visible { outline: 2.5px solid var(--ui); outline-offset: 3px; }
+.scrub-track { position: relative; flex: 1 1 260px; min-width: 200px; margin-right: 10px; cursor: pointer; touch-action: none; border-radius: 15px; }
+.scrub-rail, .scrub-fill { position: absolute; left: 0; top: 13px; height: 4px; border-radius: 2px; }
+.scrub-rail { right: 0; }
+.scrub-fill { width: 0; background: var(--ink); }
+.scrub-tick { position: absolute; border-radius: 50%; }
+.scrub-thumb { position: absolute; left: 0; border-radius: 50%; background: var(--ink); }
+.scrub-cap { margin: 0; max-width: 66ch; min-height: 3em; color: var(--soft); line-height: 1.5; }
+.scrub-cap b { color: var(--ink); }
+
+/* SVG vocabulary */
+.lab { fill: var(--ink); }
+.lab.data { fill: var(--data-ink); } .lab.ui { fill: var(--ui-ink); } .lab.scr { fill: var(--scr-ink); }
+.lab.good { fill: var(--good); } .lab.bad { fill: var(--bad); } .lab.soft { fill: var(--soft); }
+.badge { font-family: var(--font-display); }
+.badge.bad { fill: var(--bad); } .badge.good { fill: var(--good); }
+.count { font-family: var(--font-mono); font-size: 12.5px; font-weight: 500; fill: var(--scr-ink); }
+.count.soft { fill: var(--soft); }
+.code { font-family: var(--font-mono); font-size: 16px; fill: var(--ink); white-space: pre; }
+.code.sm { font-size: 13.5px; }
+@keyframes blink { 50% { opacity: 0; } }
+.guide { fill: none; }
+.trail { fill: none; transition: opacity .6s ease; }
+.trail.fade { opacity: 0; }
+.lines { animation: proofscroll 6s linear infinite; }
+@keyframes proofscroll { to { transform: translateY(-180px); } }
+.pl-bad { fill: var(--bad); opacity: 0; transition: opacity .3s ease; }
+.seal { transform-box: fill-box; transform-origin: center; }
+.seal.stamp { animation: stamp .55s cubic-bezier(.2,.9,.3,1.25); }
+@keyframes stamp { from { transform: scale(1.35); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.seal-c { stroke: var(--good); transition: fill .3s, stroke .3s; }
+.seal-ok { fill: none; stroke: var(--good); stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; transition: opacity .3s; }
+.seal-no { fill: none; stroke: var(--bad); stroke-width: 7; stroke-linecap: round; opacity: 0; transition: opacity .3s; }
+.broken .seal-c { stroke: var(--bad); }
+.broken .seal-ok { opacity: 0; } .broken .seal-no { opacity: 1; } .broken .pl-bad { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .trail { transition: none; }
+  .lines, .seal.stamp, .kcaret { animation: none; }
+}
+
+/* Rework: one figure layout for every approach */
+.fig { display: grid; gap: 22px; min-width: 0; }
+.live .app-list { height: auto; max-height: 320px; }
+.demo.full .app-list { height: 240px; max-height: none; }
+.app-title { margin-left: 8px; font-family: var(--font-display); }
+
+/* The machinery panel: what ran, or what reached the screen */
+.patch-sum { margin: 0 0 8px; font-family: var(--font-display); color: var(--ink); }
+.mach { display: grid; gap: 6px; align-content: start; }
+@media (min-width: 761px) { .mach { min-height: 150px; } }
+.hline { margin: 0; border-radius: 12px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.35; overflow-wrap: anywhere; }
+.hline.good { font-weight: 600; }
+.hline.bad, .hline.missing { background: var(--bad-tint); color: var(--bad); }
+.hline.missing { padding: 3.5px 8.5px; }
+.htag { display: inline-block; font-family: var(--font-display); text-decoration: none; }
+.btn[aria-pressed="true"] { background: var(--bad-tint); border-color: var(--bad); color: var(--bad); }
+.seg-l { margin-right: -6px; }
+
+/* Widgets that draw themselves: used by immediate mode, Puri and deui */
+.kit { position: relative; user-select: none; -webkit-user-select: none; outline: none; }
+.kit-key { position: absolute; left: 0; top: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; font-size: 16px; pointer-events: none; }
+.krow { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 8px 0 12px; border-radius: 10px; }
+.krow.hot { background: var(--hair); }
+.krow.focus { background: var(--ui-tint); box-shadow: inset 0 0 0 2px var(--ui); }
+.krow.rewrote { background: var(--scr-tint); }
+.krow.jumped { background: var(--bad-tint); box-shadow: inset 0 0 0 2px var(--bad); }
+.kchk { flex: none; width: 17px; height: 17px; box-sizing: border-box; border-radius: 50%; border: 1.5px solid var(--soft); cursor: pointer; }
+.krow.done .kchk { background: var(--data); border-color: var(--data); }
+.ktext { position: relative; flex: 1; min-width: 0; height: 32px; display: flex; align-items: center; padding: 0 2px; overflow: hidden; cursor: text; }
+.kt { font-family: var(--font-display); font-size: 15.5px; font-weight: 500; color: var(--row); white-space: pre; }
+.krow.done .kt { text-decoration: line-through; color: var(--soft); }
+.kcaret { position: absolute; left: 0; margin-left: -1px; border-radius: 1px; background: var(--ui); animation: blink 1.05s steps(1) infinite; }
+.krow.jumped .kcaret { background: var(--bad); }
+.kit.steady .kcaret { animation: none; }
+.kit:not(.kbd):not(.scripted) .kcaret { animation: none; opacity: .45; }
+.kx { flex: none; opacity: 0; color: var(--soft); font-family: system-ui, sans-serif; font-size: 19px; line-height: 1; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
+.krow.hot .kx, .krow.focus .kx { opacity: 1; }
+
+/* UI state you can edit, in the Puri figure */
+.u-in { width: 3.6em; min-width: 0; padding: 0 2px; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; text-align: right; }
+.u-in:focus-visible { outline: 2px solid var(--ui); outline-offset: 2px; }
+.u.empty { color: var(--soft); }
+.u.empty dt { opacity: 1; }
+.cu { display: inline-flex; align-items: baseline; gap: 6px; margin-left: auto; padding: 1px 9px; border-radius: 999px; font-family: var(--font-mono); }
+.cu .u-in { font-family: var(--font-display); font-size: 13.5px; font-weight: 650; }
+
+/* The recap */
+.score-wrap { overflow-x: auto; }
+.score { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 17px; line-height: 1.4; }
+.score th, .score td { padding: 13px 18px 13px 0; text-align: left; vertical-align: top; }
+.score thead th:nth-child(2) { color: var(--ui-ink); }
+.score thead th:nth-child(3) { color: var(--scr-ink); }
+.score tbody th { font-family: var(--font-display); font-size: 17px; white-space: nowrap; }
+.score td { color: var(--soft); }
+.score .prop th small { display: block; font-family: var(--font-mono); font-weight: 500; letter-spacing: .04em; color: var(--soft); }
+.score tr.prop:first-of-type th, .score tr.gap th, .score tr.gap td { border-top: 0; }
+.score tbody tr:last-child th, .score tbody tr:last-child td { border-bottom: 0; }
+.kit.kbd:not(:has(.krow.focus)) { border-radius: 14px; }
+.foot { color: var(--soft); max-width: 62ch; }
+@media (max-width: 640px) {
+  .score { min-width: 0; display: block; }
+  .score thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .score tbody { display: grid; }
+  .score tr { display: grid; gap: 6px; padding: 16px 0; }
+  .score tbody tr:last-child { border-bottom: 0; }
+  .score th, .score td { display: block; padding: 0; border: 0; }
+  .score tbody th { font-size: 19px; }
+  .score .prop th small { display: inline; margin-left: 8px; }
+  .score td::before { content: attr(data-q); display: block; }
+  .score td:nth-child(2)::before { color: var(--ui-ink); }
+  .score td:nth-child(3)::before { color: var(--scr-ink); }
+}
+@media (hover: none) { .live .app-list .x, .kx { opacity: .6; } }
+/* =================================================================================================
+   The look: hairlines and square corners, as on the first bitmap screens. Colour is a thin line, or
+   a pale fine pattern behind the text: a different pattern for each kind of state.
+   ================================================================================================= */
+:root {
+  --bg: #fcfcfb; --panel: #ffffff; --ink: #0c0d0f; --soft: #5a5e66; --faint: #c4c7cd; --hair: #eceef0;
+  --data: #c2660a; --data-tint: #fbf1e4; --data-ink: #8f4a05;
+  --ui: #5a31e0; --ui-tint: #efeaff; --ui-ink: #4521ba;
+  --scr: #00807a; --scr-tint: #e2f4f2; --scr-ink: #006560;
+  --bad: #cf2f2b; --bad-tint: #fdebea;
+  --good: #1a8a4d; --good-tint: #e3f5ea;
+  --win: #ffffff; --win-edge: #0c0d0f; --row: #0c0d0f; --shadow: transparent;
+  --font-display: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* Fine 1-bit patterns, as an old screen made its greys. Each kind of state has its own: app state in
+     dots, UI state on the slant, writes to the screen in scanlines, and anything wrong in a checker.
+     The pale ones (q) sit behind text. The full-colour ones (k) are the key beside each pile's name. */
+  --p-ink: repeating-linear-gradient(0deg, var(--ink) 0 1px, transparent 1px 3px);
+  --p-desk: repeating-conic-gradient(var(--faint) 0 25%, transparent 0 50%) 0 0 / 4px 4px;
+  --data-soft: color-mix(in srgb, var(--data) 31%, var(--panel));
+  --ui-soft: color-mix(in srgb, var(--ui) 28%, var(--panel));
+  --scr-soft: color-mix(in srgb, var(--scr) 21%, var(--panel));
+  --bad-soft: color-mix(in srgb, var(--bad) 25%, var(--panel));
+  --q-data: conic-gradient(from 270deg at 1px 1px, var(--data-soft) 90deg, transparent 0) 0 0 / 2px 2px;
+  --q-ui: conic-gradient(from 270deg at 1px 1px, var(--ui-soft) 90deg, transparent 0) 0 0 / 3px 3px, conic-gradient(from 270deg at 1px 1px, var(--ui-soft) 90deg, transparent 0) 1px 2px / 3px 3px, conic-gradient(from 270deg at 1px 1px, var(--ui-soft) 90deg, transparent 0) 2px 1px / 3px 3px;
+  --q-scr: repeating-linear-gradient(0deg, var(--scr-soft) 0 1px, transparent 1px 2px);
+  --q-bad: repeating-conic-gradient(var(--bad-soft) 0 25%, transparent 0 50%) 0 0 / 2px 2px;
+  --k-data: conic-gradient(from 270deg at 1px 1px, var(--data) 90deg, transparent 0) 0 0 / 2px 2px;
+  --k-ui: conic-gradient(from 270deg at 1px 1px, var(--ui) 90deg, transparent 0) 0 0 / 3px 3px, conic-gradient(from 270deg at 1px 1px, var(--ui) 90deg, transparent 0) 1px 2px / 3px 3px, conic-gradient(from 270deg at 1px 1px, var(--ui) 90deg, transparent 0) 2px 1px / 3px 3px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d0e10; --panel: #111215; --ink: #f1f1ee; --soft: #a3a7ae; --faint: #41454d; --hair: #1e2024;
+    --data: #f0a54a; --data-tint: #2e2110; --data-ink: #f6c88c;
+    --ui: #a790ff; --ui-tint: #221b45; --ui-ink: #cbbeff;
+    --scr: #41d1c9; --scr-tint: #0d2e2c; --scr-ink: #86e4de;
+    --bad: #ff6f69; --bad-tint: #3a1716;
+    --good: #55d490; --good-tint: #10301f;
+    --win: #111215; --win-edge: #f1f1ee; --row: #f1f1ee; --shadow: transparent;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d0e10; --panel: #111215; --ink: #f1f1ee; --soft: #a3a7ae; --faint: #41454d; --hair: #1e2024;
+  --data: #f0a54a; --data-tint: #2e2110; --data-ink: #f6c88c;
+  --ui: #a790ff; --ui-tint: #221b45; --ui-ink: #cbbeff;
+  --scr: #41d1c9; --scr-tint: #0d2e2c; --scr-ink: #86e4de;
+  --bad: #ff6f69; --bad-tint: #3a1716;
+  --good: #55d490; --good-tint: #10301f;
+  --win: #111215; --win-edge: #f1f1ee; --row: #f1f1ee; --shadow: transparent;
+  color-scheme: dark;
+}
+*, *::before, *::after { border-radius: 0 !important; }
+/* Type: one engineered family in three cuts. Light at display sizes, so the letters are lines too. */
+body { font-size: 17.5px; line-height: 1.6; }
+h1 { font-size: clamp(44px, 8.4vw, 104px); font-weight: 300; line-height: .96; letter-spacing: -0.045em; font-stretch: normal; }
+h2 { font-size: clamp(28px, 4.2vw, 46px); font-weight: 300; line-height: 1.08; letter-spacing: -0.03em; font-stretch: normal; max-width: 26ch; }
+h2 .case { font-weight: 600; }
+h2 .claim { font-weight: 300; color: var(--ink); }
+.title { gap: 16px; }
+.lede { font-size: clamp(23px, 2.8vw, 31px); font-weight: 400; letter-spacing: -0.022em; line-height: 1.2; max-width: 30ch; }
+.era-head { padding-top: 22px; border-top: 1px solid var(--ink); }
+.cap { font-size: 17.5px; }
+.foot { font-family: var(--font-mono); font-size: 12px; }
+/* The strip of answers: square stops on a hairline */
+.timeline li::after { top: 7px; height: 1px; background: var(--ink); }
+@media (max-width: 720px) {
+  .timeline li::after { left: 7px; width: 1px; top: 20px; }
+}
+/* Works, costs, next: a small ruled table */
+.verdict { gap: 0; border-top: 1px solid var(--ink); }
+.verdict div { grid-template-columns: 92px minmax(0, 1fr); gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--faint); }
+.verdict dt { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; padding-top: 6px; }
+.verdict dd { font-size: 17px; }
+.verdict a { font-weight: 500; text-decoration-thickness: 1px; }
+@media (max-width: 520px) { .verdict div { grid-template-columns: minmax(0, 1fr); gap: 0; } .verdict dt { padding-top: 0; } }
+/* Notes still to write: a dashed slip */
+.todo { border: 1px dashed var(--soft); border-left: 1px dashed var(--soft); background: none; padding: 14px 18px 16px; }
+.todo-h { font-size: 11px; font-weight: 500; letter-spacing: .09em; color: var(--soft); }
+.todo li { font-size: 15.5px; }
+/* The figure: three ruled columns. The middle one is a desktop, and the app's window sits on it. */
+.demo { gap: 0; padding: 0; align-items: stretch; border: 1px solid var(--ink); background: var(--panel); }
+.demo > .pile { min-width: 0; padding: 22px 20px 26px; }
+.demo > .app { min-width: 0; padding: 30px 24px 34px; border-left: 1px solid var(--ink); border-right: 1px solid var(--ink); background: var(--p-desk); }
+.proposal .demo, .proposal .stage { border: 1px dashed var(--ink); }
+@media (max-width: 760px) {
+  .demo { gap: 0; padding: 0; }
+  .demo > .app { padding: 18px 14px 22px; border-left: 0; border-right: 0; border-bottom: 1px solid var(--ink); }
+  .demo > .pile { padding: 16px 12px 20px; }
+  .demo > .data-pile { border-right: 1px solid var(--ink); }
+}
+/* The window: a striped title bar with the title set into it */
+.app-win { border: 1px solid var(--ink); background: var(--panel); box-shadow: 2px 2px 0 var(--ink); }
+.app-bar { align-items: stretch; gap: 0; padding: 6px 7px; border-bottom: 1px solid var(--ink); background: repeating-linear-gradient(180deg, transparent 0 1px, var(--ink) 1px 2px, transparent 2px 3px); background-clip: content-box; }
+.app-title { margin: 0 auto; padding: 0 9px; background: var(--panel); color: var(--ink); font-size: 12.5px; font-weight: 600; line-height: 15px; letter-spacing: .01em; }
+.app-foot { padding: 7px 14px 12px; font-size: 10.5px; border-top: 1px solid var(--hair); }
+/* Rows. A row that holds UI state takes the slanted pattern. */
+.app-list { padding: 6px 8px 10px; scrollbar-color: var(--ink) transparent; }
+.app-list::-webkit-scrollbar-thumb { background: var(--ink); }
+.kit { padding: 6px 8px 12px; }
+.app-list li, .krow { height: 40px; padding: 0 6px 0 12px; gap: 11px; }
+.app-list li:hover, .app-list li.hot, .krow.hot { background: none; box-shadow: inset 0 0 0 1px var(--faint); }
+.app-list li:focus-within, .krow.focus { background: var(--q-ui); box-shadow: inset 0 0 0 1px var(--ui); }
+.app-list li.rewrote:not(:focus-within), .krow.rewrote { background: var(--q-scr); box-shadow: inset 0 0 0 1px var(--scr); }
+.app-list li.jumped, .app-list li.jumped:focus-within, .krow.jumped { background: var(--q-bad); box-shadow: inset 0 0 0 1px var(--bad); }
+.app-list input[type="text"], .kt { font-size: 15px; font-weight: 400; }
+.app-list input[type="text"]::selection { background: var(--ui); color: var(--panel); }
+.app-list input[type="checkbox"], .kchk { width: 15px; height: 15px; border: 1px solid var(--ink); background: var(--panel); }
+.app-list input[type="checkbox"]:checked, .krow.done .kchk {
+  border-color: var(--ink);
+  background:
+    linear-gradient(45deg, transparent calc(50% - .7px), var(--ink) calc(50% - .7px) calc(50% + .7px), transparent calc(50% + .7px)),
+    linear-gradient(-45deg, transparent calc(50% - .7px), var(--ink) calc(50% - .7px) calc(50% + .7px), transparent calc(50% + .7px)) var(--panel);
+}
+.app-list .x, .kx { font-size: 17px; }
+.kcaret { width: 1.5px; top: 8px; bottom: 8px; }
+.kit.kbd:not(:has(.krow.focus)) { outline: 1px solid var(--ui); outline-offset: -4px; }
+/* The piles. Each entry is a slip in its pile's pattern. */
+.pile-h { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-height: 16px; margin-bottom: 14px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; line-height: 1.2; letter-spacing: .09em; text-transform: uppercase; white-space: nowrap; color: var(--ink); }
+.pile-h::before { content: ""; flex: none; width: 12px; height: 12px; }
+.data-pile .pile-h, .ui-pile .pile-h { color: var(--ink); }
+.data-pile .pile-h::before { background: var(--k-data); box-shadow: inset 0 0 0 1px var(--data); }
+.ui-pile .pile-h::before { background: var(--k-ui); box-shadow: inset 0 0 0 1px var(--ui); }
+.data-pile .pile-h.flash { color: var(--data); }
+.pile-where { margin-left: 0; font-family: var(--font-display); font-size: 12px; font-weight: 400; line-height: 1.2; letter-spacing: 0; text-transform: none; white-space: normal; color: var(--soft); opacity: 1; }
+/* One slip for every entry: the same box and the same type, whichever pile it is in */
+.cards, .ustate, .mach { gap: 6px; }
+.cards li, .u, .hline { box-sizing: border-box; min-height: 32px; padding: 0 10px; border: 1px solid var(--faint); background: var(--panel); color: var(--ink); font-family: var(--font-mono); font-size: 12px; font-weight: 400; line-height: 1.3; transition: background .6s ease, color .6s ease; }
+.cards li, .u { height: 32px; }
+.cards li { flex-wrap: nowrap; gap: 8px; border-color: var(--data); background: var(--q-data), var(--panel); }
+.cards .d { width: 9px; height: 9px; border: 1px solid var(--ink); }
+.cards li.done .d { background: var(--ink); }
+.cards .t { flex: 0 1 auto; }
+.cards li.flash { background: var(--data); color: var(--panel); transition: none; }
+.cards li.flash .d { border-color: var(--panel); }
+.cards li:has(.cu) { flex-wrap: wrap; height: auto; padding: 5px 8px 6px 10px; }
+.cu { border: 1px solid var(--ui); background: var(--panel); color: var(--ui-ink); font-size: 12px; }
+.cu .u-in { font: inherit; width: 3em; }
+.u { align-items: center; gap: 12px; border-color: var(--ui); background: var(--q-ui), var(--panel); }
+.u dt, .u dd { font-family: inherit; font-size: inherit; font-weight: inherit; line-height: inherit; }
+.u dt { opacity: 1; color: var(--ui-ink); font-size: 10.5px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; }
+.u dd { color: var(--ink); }
+.u.flash { background: var(--ui); color: var(--panel); transition: none; }
+.u.flash dt, .u.flash dd { color: var(--panel); }
+.u.bad { border-color: var(--bad); background: var(--q-bad), var(--panel); color: var(--bad); }
+.u.bad dt, .u.bad dd { color: var(--bad); }
+.u.empty { height: auto; padding: 8px 10px; border-style: dashed; background: none; box-shadow: none; }
+.u dd.ticks { gap: 2px; }
+.tick { width: 3px; height: 11px; background: var(--ui); }
+.u.flash .tick { background: var(--panel); }
+.u-in { border-bottom: 1px dashed currentColor; }
+.u-note { margin: 9px 0 0; font-size: 12.5px; font-weight: 500; line-height: 1.35; }
+/* What ran, or what reached the screen: one line each, in the pattern of the pile it touches */
+.patch-sum { font-size: 12.5px; font-weight: 500; }
+.hline { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; padding: 6px 10px; }
+.hline.data { border-color: var(--data); background: var(--q-data), var(--panel); color: var(--ink); }
+.hline.view { border-color: var(--scr); background: var(--q-scr), var(--panel); color: var(--ink); }
+.hline.ui { border-color: var(--ui); background: var(--q-ui), var(--panel); color: var(--ink); }
+.hline.soft { border-style: dotted; border-color: var(--soft); box-shadow: none; color: var(--soft); }
+.hline.good { border-color: var(--good); background: var(--panel); color: var(--good); }
+.hline.bad { border-color: var(--bad); background: var(--q-bad), var(--panel); color: var(--bad); }
+.hline.missing { border: 1px dashed var(--bad); background: none; color: var(--bad); }
+.htag { margin-left: 8px; font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; opacity: 1; }
+/* Controls: boxes that invert when they're on */
+.btn { padding: 8px 16px; border: 1px solid var(--ink); background: var(--panel); font-size: 14px; font-weight: 500; }
+.btn:hover { background: var(--ink); border-color: var(--ink); color: var(--panel); }
+.btn.go { background: var(--ink); color: var(--panel); }
+.btn.sm { padding: 7px 12px; font-size: 13.5px; }
+.btn[aria-pressed="true"], .btn[aria-pressed="true"]:hover { background: var(--panel); border-color: var(--bad); color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+.seg { padding: 0; gap: 0; background: none; border: 1px solid var(--ink); }
+.seg button { padding: 7px 12px; border-left: 1px solid var(--ink); color: var(--ink); font-size: 13.5px; font-weight: 500; }
+.seg button:first-child { border-left: 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); box-shadow: none; }
+.seg-l { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--ink); }
+.btn:focus-visible, .seg button:focus-visible, .scrub-btn:focus-visible, .scrub-track:focus-visible, .app-close:focus-visible, .app-icon:focus-visible { outline: 2px solid var(--ui); outline-offset: 2px; }
+.scrub-btn { width: 38px; height: 38px; }
+/* Reset sits left of play, as its quieter partner: an outline where play is solid */
+.scrub-reset { flex: none; display: grid; place-items: center; width: 38px; height: 38px; margin-right: -8px; padding: 0; border: 1px solid var(--ink); border-radius: 50%; background: var(--bg); color: var(--ink); cursor: pointer; }
+.scrub-reset svg { display: block; fill: currentColor; }
+.scrub-reset.idle { opacity: .4; cursor: default; }
+.scrub-reset:focus-visible { outline: 2px solid var(--ui); outline-offset: 2px; }
+@media (max-width: 760px) { .scrub-track { flex-basis: 150px; min-width: 140px; } }
+/* room for both buttons and the slider on one line of a phone */
+.scrub-track { height: 30px; }
+.scrub-rail { top: 14.5px; height: 1px; background: var(--ink); }
+.scrub-fill { top: 13.5px; height: 3px; }
+.scrub-tick { top: 11.5px; width: 7px; height: 7px; margin-left: -3.5px; background: var(--bg); box-shadow: inset 0 0 0 1px var(--ink); }
+.scrub-tick.past { background: var(--ink); box-shadow: none; }
+.scrub-thumb { top: 6px; width: 9px; height: 18px; margin-left: -4.5px; box-shadow: 0 0 0 3px var(--bg); }
+.scrub.off .scrub-fill { background: var(--ink); opacity: .22; }
+.scrub.off .scrub-thumb { background: var(--bg); box-shadow: inset 0 0 0 1.5px var(--ink), 0 0 0 3px var(--bg); }
+.scrub-cap { font-size: 17.5px; }
+.scrub-cap b { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; margin-right: 10px; }
+/* Changes travel on right-angled wires */
+.trail { stroke-width: 1.5; stroke-linecap: square; stroke-linejoin: miter; opacity: 1; }
+.ripple { stroke-width: 1; }
+.ghost-ptr svg { filter: none; }
+/* The recap */
+.score th, .score td { border-bottom: 1px solid var(--faint); }
+.score thead th { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; border-bottom: 1px solid var(--ink); }
+.score tbody th { font-weight: 600; }
+.score .prop th small { font-size: 10.5px; }
+@media (max-width: 640px) { .score tr { border-bottom: 1px solid var(--faint); } .score td::before { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; } }
+/* The diagram of who writes what */
+.stage { border: 1px solid var(--ink); background: var(--panel); }
+.stage rect { rx: 0; ry: 0; }
+.soft-bg { fill: none; stroke: var(--ink); stroke-width: 1; }
+#fade-top stop, #fade-bot stop { stop-color: var(--panel) !important; }
+.pl { fill: var(--soft); height: 1.2px; }
+.guide { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 2 5; stroke-linecap: butt; }
+.lab { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; letter-spacing: .07em; text-transform: uppercase; }
+.badge { font-size: 19px; font-weight: 600; }
+.code { font-weight: 400; }
+.seal-c { fill: none; stroke-width: 1.5; }
+.seal-ok, .seal-no { stroke-width: 3; stroke-linecap: square; stroke-linejoin: miter; }
+.broken .seal-c { fill: none; }
+.u.empty dt { font-family: inherit; font-size: 12px; font-weight: 400; letter-spacing: 0; text-transform: none; white-space: normal; color: var(--ui-ink); }
+/* The close box works: it quits the app. Under the window, on the desktop, are the app's icon and
+   whatever the app saved to disk. */
+.demo > .app { position: relative; box-sizing: border-box; }
+/* border-box, so the height it keeps while closed includes its padding */
+/* The close box has the same clear space on all four sides: 7px to the window's edges and 7px to the stripes */
+.app-close { flex: none; align-self: center; width: 13px; height: 13px; margin: 0 7px 0 0; padding: 0; border: 1px solid var(--ink); background: var(--panel); box-shadow: 7px 0 0 var(--panel); cursor: pointer; }
+.app-close:hover, .app-close.hot { background: var(--ink); }
+.app.closed .app-win, .app.opening .app-win { visibility: hidden; }
+.launcher { position: absolute; left: 24px; top: 30px; display: grid; justify-items: center; width: max-content; gap: 22px; visibility: hidden; }
+.app.closed .launcher { visibility: visible; }
+.app-icon { display: grid; justify-items: center; gap: 5px; padding: 0; border: 0; background: none; color: var(--ink); cursor: pointer; }
+.app-icon svg { display: block; width: 34px; height: 42px; fill: var(--panel); stroke: var(--ink); stroke-width: 1; }
+.app-icon svg .ln { fill: none; }
+.icon-name { padding: 1px 6px; background: var(--panel); color: var(--ink); font-family: var(--font-display); font-size: 12px; font-weight: 500; line-height: 1.3; }
+.app-icon:hover .icon-name, .app-icon.hot .icon-name { background: var(--ink); color: var(--panel); }
+.cards li.bad { border-color: var(--bad); background: var(--q-bad), var(--panel); color: var(--bad); }
+.cards li.bad .d { border-color: var(--bad); }
+@media (max-width: 760px) { .launcher { left: 14px; top: 18px; } }
+.demo.quit .ustate > * { visibility: hidden; }
+/* hidden but still taking their room, so what's under them stays where it was */
+/* Each figure reserves the height of its tallest moment (see fit() in the script). On a phone the
+   desktop sits above the two piles, and the spare room goes to the piles. */
+.demo.live { box-sizing: border-box; }
+@media (max-width: 760px) { .demo.live { grid-template-rows: auto 1fr; } }
+/* Rows come and go inside a figure. The browser must not take one as its scroll anchor, or deleting
+   the row above it scrolls the whole page by a row. */
+.demo { overflow-anchor: none; }
+/* The desktop. Under the window wait a disk and the app's own icon. Quitting sends outlines gliding
+   from the window down to its icon and app state into the disk. UI state goes to nothing, or into the
+   disk as well where the app saves it: then the disk shows both patterns. */
+.disk-icon { display: grid; justify-items: center; gap: 6px; padding: 0; border: 0; background: none; color: var(--ink); cursor: pointer; }
+.disk-icon:hover .icon-name { background: var(--ink); color: var(--panel); }
+.disk-icon:focus-visible { outline: 2px solid var(--ui); outline-offset: 2px; }
+.fx-over .peek { position: absolute; display: grid; gap: 6px; transform-origin: 0 0; }
+.fx-over .peek .cards, .fx-over .peek .fx-chips { display: grid; gap: 6px; list-style: none; }
+.fx-over .peek li, .fx-over .peek .u { position: static; }
+.hd { position: relative; box-sizing: border-box; display: block; width: 42px; height: 29px; border: 1px solid var(--ink); background: var(--panel); box-shadow: 1px 1px 0 var(--ink); }
+.hd::before { content: ""; position: absolute; left: 0; right: 0; bottom: 8px; height: 1px; background: var(--ink); }
+.hd::after { content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 9px; background: var(--k-data); opacity: 0; transition: opacity .2s ease; }
+.hd.full:not(.filling)::after { opacity: 1; }
+.hd-ui { position: absolute; z-index: 1; left: 0; right: 0; top: 9px; bottom: 9px; background: var(--k-ui), var(--panel); opacity: 0; transition: opacity .2s ease; }
+.hd.full.ui:not(.filling) .hd-ui { opacity: 1; }
+.hd-led { position: absolute; left: 4px; bottom: 2px; box-sizing: border-box; width: 6px; height: 4px; border: 1px solid var(--ink); background: var(--panel); transition: background .1s ease, border-color .1s ease; }
+.hd-vent { position: absolute; right: 4px; bottom: 2px; width: 13px; height: 4px; background: repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 3px); }
+.hd.busy .hd-led { border-color: var(--data); background: var(--data); }
+.app.opening .launcher { visibility: visible; }
+.app.opening .app-icon .icon-name { background: var(--ink); color: var(--panel); }
+.fx-over { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.fx-over .cards, .fx-over .fx-chips { display: block; margin: 0; padding: 0; }
+.fx-over li, .fx-over .u { position: absolute; margin: 0; transition: none; }
+.zoom rect { fill: none; stroke: var(--ink); stroke-width: 1; }
+/* Inside the desktop: icons at the bottom, the zooming outlines over them, the window over those */
+.demo > .app { z-index: 0; }
+.zoom-layer { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
+.app-win { position: relative; z-index: 2; }
+/* A slip dissolves through a screen of dots that shrink to nothing, so even a fade has the page's grain */
+@property --dot { syntax: "<length>"; inherits: false; initial-value: 3px; }
+.dots { -webkit-mask: radial-gradient(circle at 50% 50%, #000 var(--dot), transparent calc(var(--dot) + .6px)) 0 0 / 4px 4px; mask: radial-gradient(circle at 50% 50%, #000 var(--dot), transparent calc(var(--dot) + .6px)) 0 0 / 4px 4px; }
+@media (prefers-reduced-motion: reduce) { .hd::after, .hd-ui, .hd-led { transition: none; } }
+/* Phones. Nothing may be wider than the screen, or the whole page slides sideways.
+   - A panel's heading can be long ("the change, through the derivative"), so it wraps.
+   - A figure clips whatever moves inside it, so a slip in flight can never widen the page.
+   - iOS zooms the page when you tap a text box set smaller than 16px, and leaves it zoomed. So on touch
+     screens the boxes are 16px. The small number boxes stay small to the eye: 16px, drawn at three quarters. */
+.demo { overflow: clip; }
+@media (pointer: coarse) {
+  .app-list input[type="text"] { font-size: 16px; }
+  .u-in, .cu .u-in { font-size: 16px; transform: scale(.75); transform-origin: 100% 50%; margin-left: -0.9em; }
+}
+/* The deui mark: a triangle with two lines on its grid of thirds, every line one weight, drawn in the text's colour.
+   At the top of the page the three shapes those lines make are filled with the page's own patterns, so the mark
+   follows the theme as everything else does. Beside the deui heading it is plain. */
+:root { --k-scr: repeating-linear-gradient(0deg, var(--scr) 0 1px, transparent 1px 3px); }
+.mark { position: relative; display: inline-block; aspect-ratio: 96 / 83; color: var(--ink); }
+.mark svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 5.5; stroke-linejoin: miter; stroke-miterlimit: 8; }
+.mk { position: absolute; inset: 0; }
+.mk-app { background: var(--k-data); clip-path: polygon(35.417% 36.751%, 6.250% 95.181%, 35.417% 95.181%, 50.000% 65.965%); }
+.mk-ui { background: var(--k-ui); clip-path: polygon(50.000% 65.965%, 35.417% 95.181%, 64.583% 95.181%); }
+.mk-scr { background: var(--k-scr); clip-path: polygon(50.000% 7.535%, 35.417% 36.751%, 64.583% 95.181%, 93.750% 95.181%); }
+/* At the top the mark stands to the left of the title, as tall as its capitals and on its baseline.
+   It is set in the title's own line of text, the plainest way to share a baseline, and hangs in a
+   left margin so a title that wraps keeps its lines flush with each other. */
+.title-row { --mw: .827em; --mg: .24em; font-size: clamp(44px, 8.4vw, 104px); line-height: .96; padding-left: calc(var(--mw) + var(--mg)); }
+.title-row h1 { display: inline; }
+/* Width and height are both given, so the box is the mark's exact shape in every browser. The small negative
+   margin drops the box until the base line's lower edge is on the baseline; the tip then reaches the top of the capitals. */
+.mark-top { width: var(--mw); height: calc(var(--mw) * 83 / 96); margin: 0 var(--mg) -.011em calc(-1 * (var(--mw) + var(--mg))); vertical-align: baseline; }
+.mark-top:focus-visible { outline: 2px solid var(--ui); outline-offset: 4px; }
+.mark-in { width: .86em; height: calc(.86em * 83 / 96); margin: 0 .26em -.011em 0; vertical-align: baseline; }
+/* The problem's two questions, set out once and then used as the yardstick for every approach.
+   Violet is UI state and teal is the screen, as everywhere else on the page. */
+.asks { list-style: none; margin: 0; padding: 0; max-width: 66ch; border-top: 1px solid var(--ink); counter-reset: ask; }
+.asks li { counter-increment: ask; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 5px 12px; padding: 14px 0 16px; border-bottom: 1px solid var(--faint); }
+.asks li::before { content: "Question " counter(ask); grid-row: 1 / span 2; padding-top: 7px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; white-space: nowrap; }
+.asks .q1::before { color: var(--ui-ink); }
+.asks .q2::before { color: var(--scr-ink); }
+.ask-q { font-family: var(--font-display); font-size: clamp(20px, 2.3vw, 24px); font-weight: 500; letter-spacing: -.012em; line-height: 1.2; color: var(--ink); }
+@media (max-width: 520px) { .asks li { grid-template-columns: minmax(0, 1fr); } .asks li::before { grid-row: auto; padding-top: 0; } }
+/* Each approach is examined in the same four lines. The first two are its answers to the two questions. */
+.verdict .q1 dt { color: var(--ui-ink); }
+.verdict .q2 dt { color: var(--scr-ink); }
+.verdict .plus dt, .verdict .minus dt { color: var(--ink); }
+.cap a { color: var(--ink); font-weight: 500; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+/* There is no subtitle. The lede sits under the title and says what the title means. */
+.title .lede { max-width: none; text-wrap: balance; }
+/* Under a section's heading: who it is about. And the two questions in their short form, without descriptions. */
+.eg { margin: 0; font-family: var(--font-mono); font-size: 12.5px; letter-spacing: .02em; color: var(--soft); }
+.asks.compact li { padding: 11px 0 12px; align-items: baseline; }
+.asks.compact li::before { grid-row: auto; padding-top: 0; }
+/* In a handler, each line says what it edits, on the right and in that pile's colour */
+.htag.pile { margin-left: auto; padding-left: 4px; white-space: nowrap; }
+.hline.data .htag.pile { color: var(--data-ink); }
+.hline.view .htag.pile { color: var(--scr-ink); }
+.hline.ui .htag.pile { color: var(--ui-ink); }
+.hline.missing .htag.pile { color: var(--bad); }
+/* One script runs in every figure, and it scrolls, so each list shows five rows of its eight */
+.live .app-list, .demo.full .app-list { height: 200px; max-height: none; overflow-y: auto; }
+.hline.soft .htag.pile { color: var(--ui-ink); }
+/* The self-drawn lists scroll too: the same five rows of eight, in the browser's own scroller */
+.kit-rows { height: 200px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--ink) transparent; }
+.kit-rows::-webkit-scrollbar { width: 6px; }
+.kit-rows::-webkit-scrollbar-thumb { background: var(--ink); }
+/* A selection in self-drawn text: the selected run drawn again, reversed, over the plain text */
+.ksel { position: absolute; top: 50%; transform: translateY(-50%); white-space: pre; font-family: var(--font-display); font-size: 15px; font-weight: 400; font-style: normal; line-height: 1.3; background: var(--ui); color: var(--panel); pointer-events: none; }
+.krow.jumped .ksel { background: var(--bad); }
+.ksel[hidden] { display: none; }
+/* UI state kept on an item shows as a slip inside its card. On a narrow card it wraps instead of sticking out. */
+.cu { flex: 0 1 auto; min-width: 0; max-width: 100%; box-sizing: border-box; flex-wrap: wrap; row-gap: 0; }
+/* The plan: under each app, a small diagram of how an event gets to the screen in that approach. On a wide
+   screen it takes the spare room under the window. On a phone it sits between the window and the piles.
+   Boxes are things that are kept, in their pile's pattern. Arrows are code: a thin one carries one change,
+   a wide one carries everything, a dashed one runs only at launch. The arrows that last ran are lit. */
+/* Between a phone and a full-width page the middle column is too narrow for the drawing, so the plan
+   runs under the app state as well. */
+/* while it runs, a launch-only arrow is as solid as any other */
+@keyframes planflow { to { stroke-dashoffset: -9; } }
+.pt { font-family: var(--font-display); font-size: 10.5px; fill: var(--soft); paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
+@media (min-width: 761px) { .pt { font-size: 11px; } }
+/* a little larger where the drawing has the room */
+.pt.missing { fill: var(--bad); text-decoration: line-through; }
+/* Quit: nothing runs. What went to disk stays solid, and the rest fades back. */
+/* A simpler plan, tried as an alternative. At rest it shows only what is kept. Code and arrows appear as
+   they run and go when the next thing happens. */
+.pt.idle { display: none; }
+/* =================================================================================================
+   The figure is the diagram, and each approach arranges its own. What they share is the orientation:
+   what you keep is on the left and the screen is on the right. What stands between the two, and
+   where your code sits, is the approach itself.
+     retained mode   nothing between (a dormant build() arrow); your handler below the gap
+     React           the old tree and the new tree between, row for row with the window; your handler below them
+     immediate mode  the drawing loop between, and the library's store under it
+     Puri            both piles side by side, one wide view() arrow across a channel; the handler under them
+     deui            the change under your state, the screen's change under the screen, the derivative between
+   The UI state pile sits with whoever keeps it: in a drawer under the window, in the library's box,
+   or beside app state. Arrows run from what ran to the real pile or the real window it touched.
+   ================================================================================================= */
+.demo.uni > .ui-pile { padding: 0; }
+.code-pile .pile-h::before, .scr-pile .pile-h::before, .mid-pile .pile-h::before { display: none; }
+.code-pile .patch-sum, .scr-pile .patch-sum { min-height: 1.4em; margin-bottom: 10px; }
+.demo.keeps-library .ui-box { border: 1px solid var(--ink); padding: 14px 14px 12px; }
+.demo.keeps-toolkit .ui-box { border: 1px solid var(--ink); border-top: 0; background: var(--panel); box-shadow: 2px 2px 0 var(--ink); padding: 16px 14px 12px; }
+.demo.keeps-toolkit .ustate { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 6px; }
+/* a drawer is wide and shallow */
+.demo.quit.keeps-toolkit .ui-box { visibility: hidden; }
+/* the drawer goes with the window it belongs to */
+.uni .u-note { min-height: 2.7em; }
+/* The log: one line for each thing that ran before, newest first */
+.hist { --fade: 14px; min-height: 0; overflow: hidden; margin-top: 14px; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--fade)), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - var(--fade)), transparent); }
+/* the oldest lines run off the bottom */
+.hist-l { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.lg { display: flex; align-items: baseline; column-gap: 7px; min-height: 22px; box-sizing: border-box; padding: 3px 0 2px; border-top: 1px solid var(--faint); font-family: var(--font-display); font-size: 12px; line-height: 1.3; color: var(--ink); }
+.sum-x { margin-left: 7px; font-family: var(--font-mono); font-size: 11px; font-weight: 400; color: var(--soft); }
+.lg-n { flex: none; }
+.lg-x { flex: none; font-family: var(--font-mono); font-size: 11px; color: var(--soft); }
+.lg-r { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; column-gap: 8px; }
+.lg-w { color: var(--soft); }
+.lg-t { font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; }
+.lg-t.data { color: var(--data-ink); }
+.lg-t.view { color: var(--scr-ink); }
+.lg-t.ui, .lg-t.soft { color: var(--ui-ink); }
+.lg-t.missing, .lg-t.bad { color: var(--bad); }
+.lg-t.dim { color: var(--soft); }
+.hline.soft .htag.pile.dim { color: var(--soft); }
+.demo.uni > .mid-pile { position: relative; padding: 0; }
+.mid-link { width: max-content; max-width: 100%; margin: 13px auto 0; text-align: center; }
+/* level with the window's title bar: the link's arrow lands there, clear of the rows */
+.ml-t { font-family: var(--font-mono); font-size: 11.5px; line-height: 1.3; color: var(--soft); }
+.ml-s { font-family: var(--font-display); font-size: 11px; line-height: 1.3; color: var(--soft); }
+.mid-link.on .ml-t { color: var(--ink); }
+/* Side by side, on a wide screen */
+@media (min-width: 1001px) {
+  .demo.uni { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr); grid-template-rows: auto 1fr; }
+  .demo.uni > .data-pile { grid-column: 1; grid-row: 1 / span 2; }
+  .demo.uni > .app { border: 0; }
+  .uni .mach { min-height: 0; }
+  .uni .code-pile .mach, .uni .scr-pile .mach { min-height: 76px; }
+  /* Retained mode and React: the middle column is the space between, with the handler at its foot */
+  .demo.fig-hand > .mid-pile, .demo.fig-react > .mid-pile { grid-column: 2; grid-row: 1; border-left: 1px solid var(--ink); border-right: 1px solid var(--ink); }
+  .demo.fig-hand > .code-pile, .demo.fig-react > .code-pile { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; justify-content: flex-end; padding: 18px 28px 26px; border-left: 1px solid var(--ink); border-right: 1px solid var(--ink); }
+  /* Retained mode keeps a log. What ran last stands at the top of the middle column, level with the cards and rows it edits, and what ran before trails below it. */
+  .demo.fig-hand > .code-pile { grid-row: 1 / span 2; justify-content: flex-start; padding-top: 92px; }
+  .demo.fig-hand .hist { flex: 1 1 0; }
+  .demo.fig-hand > .app, .demo.fig-react > .app { grid-column: 3; grid-row: 1; z-index: 1; padding-bottom: 0; }
+  .demo.fig-hand > .ui-pile, .demo.fig-react > .ui-pile { grid-column: 3; grid-row: 2; padding: 0 36px 34px; background: var(--p-desk); }
+  /* Immediate mode: the loop, and the library under it */
+  .demo.fig-imm > .mid-pile { display: none; }
+  .demo.fig-imm > .code-pile { grid-column: 2; grid-row: 1; padding: 22px 28px 14px; border-left: 1px solid var(--ink); border-right: 1px solid var(--ink); }
+  .demo.fig-imm > .ui-pile { grid-column: 2; grid-row: 2; padding: 0 20px 26px; border-left: 1px solid var(--ink); border-right: 1px solid var(--ink); }
+  .demo.fig-imm > .app { grid-column: 3; grid-row: 1 / span 2; }
+  .demo.fig-imm .code-pile .mach { min-height: 124px; }
+  /* Puri and deui: your state is two piles wide, then a channel, then the screen */
+  .demo.fig-puri, .demo.fig-deui { grid-template-columns: minmax(0, .84fr) minmax(0, 1.16fr) 130px minmax(0, 1.15fr); }
+  /* Everything you keep is one region: the two piles, side by side with no line between them. Your code is boxed off in its corner. */
+  .demo.fig-puri > .data-pile, .demo.fig-deui > .data-pile { padding-right: 20px; }
+  .demo.fig-puri > .ui-pile, .demo.fig-deui > .ui-pile { grid-column: 2; grid-row: 1; padding: 22px 24px 18px 24px; border-right: 1px solid var(--ink); }
+  .demo.fig-puri > .code-pile, .demo.fig-deui > .code-pile { grid-column: 2; grid-row: 2; padding: 16px 24px 26px 24px; border: 1px solid var(--ink); border-bottom: 0; }
+  .demo.fig-puri > .mid-pile { grid-column: 3; grid-row: 1 / span 2; }
+  .demo.fig-deui > .mid-pile { grid-column: 3; grid-row: 1; }
+  .demo.fig-deui > .cross-pile { grid-column: 3; grid-row: 2; padding: 16px 0 26px; border-top: 1px solid var(--ink); }
+  .demo.fig-deui .cross-link { margin-top: 79px; }
+  .demo.fig-puri > .app { grid-column: 4; grid-row: 1 / span 2; border-left: 1px solid var(--ink); }
+  .demo.fig-deui > .app { grid-column: 4; grid-row: 1; border-left: 1px solid var(--ink); padding-bottom: 22px; }
+  .demo.fig-deui > .scr-pile { grid-column: 4; grid-row: 2; padding: 16px 24px 26px; border-left: 1px solid var(--ink); border-top: 1px solid var(--ink); }
+}
+/* Stacked, on a phone or a narrow window: the screen first, then what stands between, then what ran, then what you keep */
+@media (max-width: 1000px) {
+  .demo.uni, .demo.live.uni { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; align-content: start; }   /* spare room goes to the bottom, so nothing above it shifts */
+  .demo.uni > .pile, .demo.uni > .app { grid-column: 1; grid-row: auto; border-left: 0; border-right: 0; }
+  .demo.uni > .app { order: 1; padding: 18px 24px 22px; border-bottom: 1px solid var(--ink); }
+  .demo.uni .app-win { max-width: 430px; margin-left: auto; margin-right: auto; }
+  .demo.keeps-toolkit > .app { padding-bottom: 0; border-bottom: 0; }
+  .demo.keeps-toolkit > .ui-pile { order: 2; padding: 0 34px 22px; border-bottom: 1px solid var(--ink); background: var(--p-desk); }
+  .demo.keeps-toolkit .ui-box { max-width: 406px; margin: 0 auto; box-sizing: border-box; }
+  .demo.uni > .mid-pile { order: 3; padding: 10px 24px 11px; border-bottom: 1px solid var(--ink); }
+  .demo.fig-imm > .mid-pile { display: none; }
+  .mid-link { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 9px; width: auto; margin: 0; text-align: left; }
+  .demo.uni > .scr-pile { order: 4; padding: 16px 24px 18px; border-bottom: 1px solid var(--ink); }
+  .demo.uni > .cross-pile { order: 5; padding: 10px 24px 11px; border-bottom: 1px solid var(--ink); }
+  .demo.uni > .code-pile { order: 6; padding: 16px 24px 20px; border-bottom: 1px solid var(--ink); }
+  .demo.keeps-library > .code-pile { padding-bottom: 12px; border-bottom: 0; }
+  .demo.keeps-library > .ui-pile { order: 7; padding: 0 24px 20px; border-bottom: 1px solid var(--ink); }
+  .demo.uni > .data-pile { order: 8; padding: 16px 24px 20px; }
+  .demo.keeps-yours > .data-pile { padding-bottom: 16px; }
+  .demo.keeps-yours > .ui-pile { order: 9; padding: 0 24px 20px; }
+  .demo.uni .cards { grid-auto-flow: column; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: repeat(var(--rows, 4), auto); column-gap: 6px; }
+  .demo.uni .ustate { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 6px; }
+  .uni .mach { min-height: 38px; }
+  .demo.uni .hist { --fade: 7px; height: 72px; }   /* three lines of it, whatever it holds, so nothing under it moves */
+}
+/* React's two trees: the one from the render before and the one view() just returned, as lists that stand row
+   for row with each other and with the window. The gutter between them is where each row meets its partner. */
+.trees { display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr); }
+.tcol { min-width: 0; }
+.t-old { grid-column: 1; }
+.t-new { grid-column: 3; }
+.tree-h { margin-bottom: 0; white-space: nowrap; }
+.tree-h .pile-where { overflow: hidden; text-overflow: ellipsis; }
+.tree { position: relative; box-sizing: border-box; list-style: none; margin: 0; padding: 0 3px; height: 202px; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; border: 1px dashed var(--scr); background: var(--panel); }
+.tree::-webkit-scrollbar { display: none; }
+.tree:focus-visible { outline: 2px solid var(--ui); outline-offset: 2px; }
+.t-old .tree { border-color: var(--soft); }
+/* the one that is on its way out */
+.tree:empty::after { content: attr(data-none); position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; font-family: var(--font-display); font-size: 12px; color: var(--soft); }
+.tree li { display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 6px; box-sizing: border-box; font-family: var(--font-display); font-size: 12.5px; color: var(--soft); white-space: nowrap; transition: background .5s ease, color .5s ease, opacity .12s ease; }
+.tree li.done .tt { text-decoration: line-through; }
+.tree li .tt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tree li .tk { flex: none; font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em; color: var(--scr-ink); }
+.tree li.differs { background: var(--q-scr); color: var(--ink); }
+/* a row that isn't the same as its partner, or has none */
+.tree li.flash { background: var(--q-scr); color: var(--ink); transition: none; }
+.view-link .ml-t { color: var(--ink); }
+.tree.wait li { opacity: 0; transition: none; }
+/* the new tree, before view() has returned it */
+/* A tree longer than its box scrolls by itself, apart from the window. It fades out at whichever edge has more beyond it. */
+.tree.more-down { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent); }
+.tree.more-up { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 20px); mask-image: linear-gradient(to bottom, transparent, #000 20px); }
+.tree.more-up.more-down { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 20px), transparent); mask-image: linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 20px), transparent); }
+.uni .code-pile .mach.tree-diff { min-height: 0; margin: 10px 0 0; padding-bottom: 22px; }
+@media (min-width: 1001px) {
+  .demo.fig-react { grid-template-columns: minmax(0, .72fr) minmax(0, 1.36fr) minmax(0, 1.22fr); }
+  .demo.fig-react > .mid-pile { padding: 41px 20px 0; }   /* room above the trees for the arrow that goes over the old one */
+  .demo.fig-react .view-link { position: absolute; right: 50px; top: 8px; width: auto; margin: 0; text-align: right; }
+  /* Under the trees: your handler under the old one, at the foot, and what the comparison found under the new one */
+  .demo.fig-react > .code-pile { display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr); grid-template-rows: 1fr auto auto auto; padding: 0 20px 26px; }
+  .demo.fig-react > .code-pile > .tree-diff { grid-column: 3; grid-row: 1 / span 4; align-self: start; padding-bottom: 0; }
+  .demo.fig-react > .code-pile > .pile-h { grid-column: 1 / span 3; grid-row: 2; }
+  .demo.fig-react > .code-pile > .patch-sum { grid-column: 1 / span 3; grid-row: 3; }
+  .demo.fig-react > .code-pile > .mach:not(.tree-diff) { grid-column: 1 / span 3; grid-row: 4; max-width: 290px; }
+}
+@media (max-width: 1000px) {
+  .demo.fig-react > .mid-pile { display: flex; flex-direction: column; }
+  .demo.fig-react .view-link { order: -1; display: block; width: auto; margin: 0 2px 2px 0; text-align: right; }   /* the function's name, over the tree it returns */
+  .trees { grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr); }
+  .tree { height: 152px; margin-top: 7px !important; }
+  .tree li { height: 30px; font-size: 12px; padding: 0 4px; }
+}
+/* The arrows */
+.demo-ax { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; overflow: visible; }
+.ax { --c: var(--ink); }
+.ax.c-data { --c: var(--data); }
+.ax.c-ui { --c: var(--ui); }
+.ax.c-scr { --c: var(--scr); }
+.ax.c-bad { --c: var(--bad); }
+.ax .al { fill: none; stroke: var(--c); stroke-width: 2; stroke-linejoin: miter; }
+.ax.wide .al { stroke-width: 5; }
+.ax .ah { fill: var(--c); }
+.ax.miss .al { stroke-width: 1; stroke-dasharray: 2 3; }
+.ax.ghost .al { stroke: var(--soft); stroke-width: 1; stroke-dasharray: 4 3; }
+/* a link that isn't running: build() after launch, view() in deui */
+.ax.ghost .ah { fill: var(--panel); stroke: var(--soft); stroke-width: 1; }
+.ax.pair .al { stroke: var(--soft); stroke-width: 1; }
+.ax.pair .pbg { fill: var(--panel); }
+.ax.pair .ps { fill: none; stroke: var(--soft); stroke-width: 1.2; }
+.ax.pair.diff .al { stroke: var(--scr); }
+.ax.pair.diff .ps { stroke: var(--scr); stroke-width: 1.6; }
+.ax.wait { opacity: 0; }
+.ax .am { display: none; fill: none; stroke: var(--panel); stroke-width: 3; stroke-dasharray: 3 8; }
+.demo.running .ax.run .am { display: inline; animation: axflow .5s linear infinite; }
+@keyframes axflow { to { stroke-dashoffset: -11; } }
+.demo.quit .ax.run, .demo.quit .ax.ghost { display: none; }
+.demo-ax .az { fill: none; stroke-width: 2; }
+.demo-ax .az.wide { stroke-width: 5; }
+.uni .hline, .uni .patch-sum { transition: opacity .12s ease; }
+.uni .hline.wait, .uni .patch-sum.wait { opacity: 0; transition: none; }
+.hline[hidden] { display: none; }
+/* a line that hasn't run */
+/* A row of the window, lit as an arrow lands on it */
+.uni .app-list li.flash, .uni .krow.flash { background: var(--q-scr); box-shadow: inset 0 0 0 1px var(--scr); }
+@media (prefers-reduced-motion: reduce) { .demo.running .ax.run .am { animation: none; } }
