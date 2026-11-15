@@ -58,6 +58,7 @@
     <div class="era-head"><h2><span class="case">Immediate mode<span class="colon">: </span></span><span class="claim">redraw everything, every frame</span></h2><p class="eg">Dear ImGui · egui</p></div>
     <div class="todo" role="note"><p class="todo-h">To write · immediate mode</p><ul>
       <li>What to notice: the retained tree is gone. The widget state remains, in a store, and IDs do for it what keys do in React. Puri takes the next step.</li>
+      <li>Set up the key message here: keys in React and IDs here are the same cost, a stable identity for every place state is stored. Retained mode pays it differently: the widget object is the identity, which is why your handler has to keep hold of it.</li>
       <li>Context: games have long worked this way, and it has spread to tools and apps.</li>
       <li>Be fair: some libraries skip frames when nothing is happening. Check the details before publishing.</li>
     </ul></div>
@@ -96,6 +97,8 @@
     <div class="era-head"><h2><span class="case">Puri<span class="colon">: </span></span><span class="claim">widgets that keep no state</span></h2></div>
     <div class="todo" role="note"><p class="todo-h">To write · Puri</p><ul>
       <li>Answers the first question directly: UI state is plain data in your program, so how it’s managed is your choice, the way layout is.</li>
+      <li>A key message: perhaps the biggest cost of the approaches above is that each place state is stored needs an identity that stays the same from one frame to the next. Keys and IDs are that cost. Puri doesn’t make the need go away. It makes it explicit, and yours to answer in the way that suits your app: on the item, in a keyed store, by position with care, or with a general system plugged in.</li>
+      <li>The figure’s switch is that choice. Its third setting, a table by row, fails the way position keys fail, and the fix is one line in your own handler.</li>
       <li>An objection worth quoting: “immediate mode libraries that shunt all state management onto the application are out of the question.” A reply: you pick a store, and it can be the same keyed table. The widgets just don’t pick for you.</li>
       <li>Another: web developers have tried “everything in the store”, and many moved away from it. What’s different here: this goes down to the caret, and plumbing is cheap to write now. Check that history before publishing.</li>
       <li>It doesn’t merge the piles. The figure’s three homes are all yours to choose.</li>
@@ -105,7 +108,7 @@
     <dl class="verdict">
       <div class="q1"><dt>UI state</dt><dd>In your program. Widgets keep none, so focus, caret, selection and scroll are plain data, held wherever suits the app.</dd></div>
       <div class="q2"><dt>Changes</dt><dd>Your handler edits your data, and the whole view is rerun.</dd></div>
-      <div class="plus"><dt>Strength</dt><dd>UI state can be saved with everything else, tested, and managed however you choose, and the toolkit needs no keys or IDs.</dd></div>
+      <div class="plus"><dt>Strength</dt><dd>UI state can be saved with everything else, tested, and managed however you choose. How it is tied to your data is your decision, in the open, not a key or an ID the toolkit asks for.</dd></div>
       <div class="minus"><dt>Trade-off</dt><dd>Handlers edit both piles again, though both are now your own data. And widgets that draw themselves give up what the platform’s text boxes provide, such as accessibility and input methods.</dd></div>
     </dl>
     <p class="cap">That first trade-off, two edits for every change, is where <a href="#era-deui">deui</a> starts.</p>
@@ -117,6 +120,7 @@
       <li>Answers the second question directly: the change is kept, not recovered.</li>
       <li>The name: deui, said “dewey”. It’s dUI, the change in the UI. It also reads as de-UI, taking something away, and that isn’t wrong.</li>
       <li>The change is a value. A derivative turns the data’s change into the screen’s change and the UI state’s change.</li>
+      <li>Identity again: here state can be kept by position and still follow its item, because the change says how the positions moved. In the figure the focus goes from row 3 to row 2. No key is needed, since nothing has to be matched up afterwards.</li>
       <li>Precedent: the best text editors already work this way. CodeMirror 6 and ProseMirror carry every edit as a change and map the selection through it. They do it by hand, for one widget.</li>
       <li>In retained mode a missing line went unseen. Here a derivative with a missing edit breaks the law, and a check catches it.</li>
       <li>When a change and your focus collide, a policy you chose decides. No magic. The script doesn’t show this. The reader can, by deleting the row they’re in.</li>
