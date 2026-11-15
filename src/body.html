@@ -58,7 +58,7 @@
     <div class="era-head"><h2><span class="case">Immediate mode<span class="colon">: </span></span><span class="claim">redraw everything, every frame</span></h2><p class="eg">Dear ImGui · egui</p></div>
     <div class="todo" role="note"><p class="todo-h">To write · immediate mode</p><ul>
       <li>What to notice: the retained tree is gone. The widget state remains, in a store, and IDs do for it what keys do in React. Puri takes the next step.</li>
-      <li>Set up the key message here: keys in React and IDs here are the same cost, a stable identity for every place state is stored. Retained mode pays it differently: the widget object is the identity, which is why your handler has to keep hold of it.</li>
+      <li>Set up the key message here: all three approaches need a stable identity for every place state is stored. In retained mode it is the widget object, which has to be kept alive and kept hold of. In React it is a key. Here it is an ID. The same cost, paid three ways.</li>
       <li>Context: games have long worked this way, and it has spread to tools and apps.</li>
       <li>Be fair: some libraries skip frames when nothing is happening. Check the details before publishing.</li>
     </ul></div>
@@ -156,13 +156,13 @@
   <section class="era" aria-labelledby="end-h">
     <div class="era-head"><h2 id="end-h">Two questions, five answers</h2></div>
     <div class="score-wrap"><table class="score">
-      <thead><tr><th scope="col"></th><th scope="col">Where UI state lives</th><th scope="col">How the screen learns what changed</th></tr></thead>
+      <thead><tr><th scope="col"></th><th scope="col">Where UI state lives</th><th scope="col">What ties it to your data</th><th scope="col">How the screen learns what changed</th></tr></thead>
       <tbody>
-        <tr><th scope="row">Retained mode</th><td data-q="Where UI state lives">In the widgets</td><td data-q="How the screen learns what changed">Your handler passes it on, in a line of its own</td></tr>
-        <tr><th scope="row">React</th><td data-q="Where UI state lives">In the DOM, matched by keys</td><td data-q="How the screen learns what changed">It reruns the view and compares</td></tr>
-        <tr><th scope="row">Immediate mode</th><td data-q="Where UI state lives">In the library, under IDs</td><td data-q="How the screen learns what changed">It never needs to: it redraws everything, every frame</td></tr>
-        <tr class="prop"><th scope="row">Puri <small>proposed</small></th><td data-q="Where UI state lives">In your program</td><td data-q="How the screen learns what changed">It reruns the view on each change</td></tr>
-        <tr class="prop"><th scope="row">deui <small>proposed</small></th><td data-q="Where UI state lives">In your program</td><td data-q="How the screen learns what changed">From the change, through a checked derivative</td></tr>
+        <tr><th scope="row">Retained mode</th><td data-q="Where UI state lives">In the widgets</td><td data-q="What ties it to your data">The widget object itself, which the toolkit keeps alive</td><td data-q="How the screen learns what changed">Your handler passes it on, in a line of its own</td></tr>
+        <tr><th scope="row">React</th><td data-q="Where UI state lives">In the DOM</td><td data-q="What ties it to your data">A key you give each row, or else its position</td><td data-q="How the screen learns what changed">It reruns the view and compares</td></tr>
+        <tr><th scope="row">Immediate mode</th><td data-q="Where UI state lives">In the library’s store</td><td data-q="What ties it to your data">An ID you give each widget</td><td data-q="How the screen learns what changed">It never needs to: it redraws everything, every frame</td></tr>
+        <tr class="prop"><th scope="row">Puri <small>proposed</small></th><td data-q="Where UI state lives">In your program</td><td data-q="What ties it to your data">Your choice: on the item, in a keyed store, or by position</td><td data-q="How the screen learns what changed">It reruns the view on each change</td></tr>
+        <tr class="prop"><th scope="row">deui <small>proposed</small></th><td data-q="Where UI state lives">In your program</td><td data-q="What ties it to your data">Your choice, and kept by position it moves with the change</td><td data-q="How the screen learns what changed">From the change, through a checked derivative</td></tr>
       </tbody>
     </table></div>
     <div class="todo" role="note"><p class="todo-h">To write · ending</p><ul>

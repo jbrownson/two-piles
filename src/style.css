@@ -219,10 +219,11 @@ p { margin: 0; }
 
 /* The recap */
 .score-wrap { overflow-x: auto; }
-.score { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 17px; line-height: 1.4; }
+.score { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 17px; line-height: 1.4; }
 .score th, .score td { padding: 13px 18px 13px 0; text-align: left; vertical-align: top; }
 .score thead th:nth-child(2) { color: var(--ui-ink); }
-.score thead th:nth-child(3) { color: var(--scr-ink); }
+.score thead th:nth-child(3) { color: var(--ui-ink); }
+.score thead th:nth-child(4) { color: var(--scr-ink); }
 .score tbody th { font-family: var(--font-display); font-size: 17px; white-space: nowrap; }
 .score td { color: var(--soft); }
 .score .prop th small { display: block; font-family: var(--font-mono); font-weight: 500; letter-spacing: .04em; color: var(--soft); }
@@ -241,7 +242,8 @@ p { margin: 0; }
   .score .prop th small { display: inline; margin-left: 8px; }
   .score td::before { content: attr(data-q); display: block; }
   .score td:nth-child(2)::before { color: var(--ui-ink); }
-  .score td:nth-child(3)::before { color: var(--scr-ink); }
+  .score td:nth-child(3)::before { color: var(--ui-ink); }
+  .score td:nth-child(4)::before { color: var(--scr-ink); }
 }
 @media (hover: none) { .live .app-list .x, .kx { opacity: .6; } }
 /* =================================================================================================
