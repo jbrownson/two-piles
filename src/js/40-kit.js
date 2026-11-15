@@ -189,9 +189,6 @@
     var K = Kit(F), M = { pt: K.pt }, items = [], nextId = 9, byItem = true;
     var lib = { active: null, caret: 0, anchor: 0, hot: -1, scroll: 0 }, tone = null;
     var frames = 0, still = 0, raf = 0, on = false, dirty = false, queue = [], closed = false;
-    /* Some immediate-mode libraries draw a frame only when something has happened, not sixty times a second. The figure's
-       second switch turns that on: `lazy`. `wake` says a frame is due. Each frame that is drawn is still drawn in full. */
-    var lazy = false, wake = true, head = F.mach.parentNode.querySelector(".pile-h");
     K.steady(true);
     /* What runs is the same every frame, so its lines stay and only their words change. The first has the
        arrow that never stops: everything in app state goes in, and the whole screen comes out. The third
@@ -234,8 +231,8 @@
       went("click", { code: "if (x(i)) items.remove(i)", card: null, gap: i }, false);
     }
     function act(ev) {
-      if (ev.type === "hot") { if (lib.hot !== ev.row) wake = true; lib.hot = ev.row; return; }
-      dirty = wake = true;
+      if (ev.type === "hot") { lib.hot = ev.row; return; }
+      dirty = true;
       if (evAt == null) evAt = ev.type === "scroll" ? F.host : ev.row != null ? rowY(ev.row) : activeRow() >= 0 ? rowY(activeRow()) : F.host;
       if (ev.type === "scroll") { lib.scroll = ev.y; if (tone !== "jumped") F.setNote("", ""); went("scroll", null, true); return; }
       if (ev.type === "select") { calm(); lib.active = idOf(ev.row); lib.anchor = ev.a; lib.caret = ev.b; went("drag", null, true); return; }
@@ -277,7 +274,7 @@
       var a = activeRow();
       if (lib.active && a < 0) lib.active = null;   /* nothing claimed that ID this frame */
       if (a >= 0) { var len = items[a].text.length; if (lib.caret > len) lib.caret = len; if (lib.anchor > len) lib.anchor = len; }
-      var blink = F.quiet || !on || F.playing || lazy || (performance.now() % 1060) < 560, src = a >= 0 ? K.row(a) : null;
+      var blink = F.quiet || !on || F.playing || (performance.now() % 1060) < 560, src = a >= 0 ? K.row(a) : null;
       K.draw({
         rows: items.map(function (it, i) { return { text: it.text, done: it.done, focus: i === a, caret: blink ? lib.caret : null, sel: i === a ? [lib.anchor, lib.caret] : null, hot: i === lib.hot, tone: i === a ? tone : null }; }),
         scroll: lib.scroll
@@ -291,11 +288,10 @@
       setLine(F.sum, "frame " + frames.toLocaleString("en-US"));
       setLine(l1, "draw(items): all " + count(items.length, "row"));
       /* One sentence with its number last, so the words never move: only the digits change, and nothing swaps in for a single frame */
-      setLine(l2, lazy ? "no frame until something happens" : "frames since anything changed: " + (still > 1 ? still : 0).toLocaleString("en-US"));
-      wake = false;
+      setLine(l2, "frames since anything changed: " + (still > 1 ? still : 0).toLocaleString("en-US"));
     }
     function frame() { queue.splice(0).forEach(act); draw(); }
-    function loop() { raf = requestAnimationFrame(function () { if (!on) return; if (!lazy || wake || queue.length) frame(); loop(); }); }
+    function loop() { raf = requestAnimationFrame(function () { if (!on) return; frame(); loop(); }); }
     function now() { if (!on || F.quiet) draw(); }
     K.on = function (ev) { if (closed) return; queue.push(ev); if (!on) frame(); };
 
@@ -305,23 +301,15 @@
     M.select = function (i, a, b) { act({ type: "select", row: i, a: a, b: b }); now(); };
     M.scrollTo = function (y) { act({ type: "scroll", y: y }); now(); };
     M.removeAt = function (i) { act({ type: "press", part: "x", row: i }); now(); };
-    M.hot = function (i) { if (lib.hot !== i) wake = true; lib.hot = i; };
+    M.hot = function (i) { lib.hot = i; };
     M.setScripted = K.scripted;
     M.blur = K.blur;
     M.flush = function () { draw(); };
     /* How the panel reads after a long quiet spell: its longest text, for a figure measuring its height */
     M.settle = function () { if (closed) return; var s = still, f = frames; still = 99998; frames = 999998; dirty = false; draw(); still = s; frames = f; };
-    M.visible = function (v) { v = v && !reduce; if (v === on) return; on = v; cancelAnimationFrame(raf); F.running(on && !closed && !lazy); if (on) loop(); };
-    M.lazy = function () { return lazy; };
+    M.visible = function (v) { v = v && !reduce; if (v === on) return; on = v; cancelAnimationFrame(raf); F.running(on && !closed); if (on) loop(); };
     M.byItem = function () { return byItem; };
     M.choose = function (name, val, live) {
-      if (name === "frames") {   /* when frames are drawn: all the time, or only when something happens */
-        lazy = val === "lazy"; wake = true;
-        head.textContent = lazy ? "a frame when something happens" : "every frame";
-        F.running(on && !closed && !lazy);
-        if (live) now();
-        return;
-      }
       var a = live ? activeRow() : -1;
       byItem = val === "item";
       F.where.textContent = "kept in the library, under IDs from " + (byItem ? "the items" : "position");
@@ -344,12 +332,12 @@
     M.launch = function (disk) {
       items = copyItems(disk.data); nextId = topId(items); closed = false; dirty = true;
       F.cardsFor(items); draw();
-      l3.hidden = true; wake = true; F.running(on && !lazy); F.spark([]);
+      l3.hidden = true; F.running(on); F.spark([]);
     };
     M.reset = function () {
       items = startItems(); nextId = 9; fresh(); queue.length = 0; dirty = true; closed = false;
       F.resetPanels(); F.cardsFor(items); draw();
-      l3.hidden = true; wake = true; F.running(on && !lazy); F.spark([]);
+      l3.hidden = true; F.running(on); F.spark([]);
     };
     return M;
   }
@@ -357,16 +345,14 @@
   LiveFig("imm", {
     kit: true, label: "To-do list, immediate mode", where: "kept in the library, under IDs from the items", keeps: "library", mach: "every frame",
     fields: [["focus", "focus", "nothing"], ["caret", "caret", "—"], ["selection", "selection", "none"], ["scroll", "scroll", "0 px"]],
-    switches: [{ name: "ids", label: "Where IDs come from", options: [["item", "IDs from items"], ["pos", "IDs from position"]] },
-               { name: "frames", label: "When frames are drawn", options: [["always", "Every frame"], ["lazy", "Only on input"]] }],
+    switches: [{ name: "ids", label: "Where IDs come from", options: [["item", "IDs from items"], ["pos", "IDs from position"]] }],
     machine: function (F) { return ImmMachine(F); },
     script: function (F) {
       return story(F, {
         cap: function (k) {
           return {
             "1": "Click into “Fix scroll bug”. The library notes which ID has the focus.",
-            "2": F.m.lazy() ? "Type “today” at the end. Each key draws one frame, and that frame redraws all eight rows. Between keys nothing is drawn."
-                            : "Type “today” at the end. Every frame redraws all eight rows, whether you type or not.",
+            "2": "Type “today” at the end. Every frame redraws all eight rows, whether you type or not.",
             "3": "Select a word. The library keeps the selection too, under the same ID.",
             "4a": "Delete “Call Phil”, the row above yours.",
             "4": F.m.byItem()

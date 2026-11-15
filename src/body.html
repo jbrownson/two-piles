@@ -66,7 +66,7 @@
       <div class="q1"><dt>UI state</dt><dd>In the library’s own store, under an ID your code gives each widget.</dd></div>
       <div class="q2"><dt>Changes</dt><dd>The screen never needs to know: the whole interface is drawn again every frame.</dd></div>
       <div class="plus"><dt>Strength</dt><dd>No retained tree and nothing to compare. The code that draws the interface is the whole interface.</dd></div>
-      <div class="minus"><dt>Trade-off</dt><dd>Every frame is drawn in full, whether or not anything changed. Some libraries draw a frame only when something happens, and each of those frames is still drawn in full: the figure’s second switch shows it. And IDs do the job keys do: UI state stays with a widget only while its ID stays the same. The figure’s switch takes IDs from position to show it.</dd></div>
+      <div class="minus"><dt>Trade-off</dt><dd>Every frame is drawn in full, whether or not anything changed. Some libraries draw a frame only when something happens, and each of those frames is still drawn in full. And IDs do the job keys do: UI state stays with a widget only while its ID stays the same. The figure’s switch takes IDs from position to show it.</dd></div>
     </dl>
   </section>
 
