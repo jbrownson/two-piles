@@ -10,7 +10,7 @@ const { PAGE, launch, devices } = require('./lib');
   await p.evaluate(() => document.fonts.ready);
   await p.waitForTimeout(600);
   let bad = 0;
-  for (const [name, sw] of [['hand', 'Leave a line out'], ['react', 'No keys'], ['imm', 'IDs from position'], ['puri', 'In a table by row'], ['deui', 'Break the derivative']]) {
+  for (const [name, sw] of [['hand', 'Leave a line out'], ['react', 'No keys'], ['imm', 'IDs from position'], ['imm', 'Only on input'], ['puri', 'In a table by row'], ['deui', 'Break the derivative']]) {
     const fig = p.locator(`.fig[data-fig="${name}"]`);
     await fig.locator('.scrub').scrollIntoViewIfNeeded();
     await fig.locator('.scrub button', { hasText: sw }).click();

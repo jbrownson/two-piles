@@ -19,7 +19,7 @@ if (process.argv[2] === '--compare') {
   const sums = {};
   const keep = (name, png) => { fs.writeFileSync(path.join(out, name + '.png'), png); sums[name] = crypto.createHash('sha1').update(png).digest('hex').slice(0, 12); };
   const SIZES = [['desktop', { viewport: { width: 1200, height: 900 } }], ['dark', { viewport: { width: 1200, height: 900 }, colorScheme: 'dark' }], ['narrow', { viewport: { width: 1024, height: 900 } }], ['tablet', { viewport: { width: 820, height: 1100 } }], ['phone', { ...devices['iPhone 13'] }], ['small', { ...devices['iPhone SE'] }]];
-  const SWITCHES = { hand: ['Leave a line out'], react: ['No keys'], imm: ['IDs from position'], puri: ['In the items', 'In a table by row'], deui: ['Previous row', 'No focus', 'Break the derivative'] };
+  const SWITCHES = { hand: ['Leave a line out'], react: ['No keys'], imm: ['IDs from position', 'Only on input'], puri: ['In the items', 'In a table by row'], deui: ['Previous row', 'No focus', 'Break the derivative'] };
   for (const [label, opts] of SIZES) {
     const ctx = await b.newContext({ ...opts, deviceScaleFactor: 1, reducedMotion: 'reduce' }), touch = !!opts.hasTouch;
     await ctx.addInitScript(() => { window.IntersectionObserver = undefined; });
