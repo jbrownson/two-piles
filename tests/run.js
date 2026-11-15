@@ -14,7 +14,8 @@ const ALL = [
   ['reset', 'the reset button, from mid-play, from the end and after hand use'],
   ['log', 'retained mode’s log, after the script and after heavy use'],
   ['byhand', 'retained mode by hand: the log’s entries, and the row a left-out line leaves behind'],
-  ['trees', 'React’s two trees scroll together, apart from the window']
+  ['trees', 'React’s two trees scroll together, apart from the window'],
+  ['arrows', 'no arrow passes over a card, slip, line, row or heading other than its own two ends']
 ];
 const args = process.argv.slice(2), quick = args.includes('--quick'), only = args.filter(a => !a.startsWith('--'));
 const todo = ALL.filter(t => !only.length || only.includes(t[0]));

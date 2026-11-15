@@ -53,8 +53,8 @@ The tests need Node and Playwright with Chromium. They drive the built page
 in a headless browser, in real time, which is why they are slow.
 
     sh build.sh
-    node tests/run.js            # everything, about 20 minutes
-    node tests/run.js --quick    # play-through at desktop size only, about 12 minutes
+    node tests/run.js            # everything, about 15 minutes
+    node tests/run.js --quick    # play-through at desktop size only, about 10 minutes
     node tests/run.js log reset  # only the named tests
 
 `tests/run.js` lists what each test checks.

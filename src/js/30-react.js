@@ -330,7 +330,7 @@
       M.blur();
       var saved = items.map(function (it) { return { id: it.id, text: it.text, done: it.done }; });
       list.textContent = "";
-      F.lines("on quit:", [["disk.save(items)", "data", "app state", "pile", { to: F.diskEl }]]);
+      F.lines("on quit:", [["disk.save(items)", "data", "app state", "pile", { to: F.diskEl, near: 1 }]]);   /* it turns beside the disk, clear of the trees */
       quitted = true; drawTrees(); treeDiff.textContent = "";
       F.setNote("", ""); F.cardsOff(); sync();
       return { data: saved, ui: false };
