@@ -585,6 +585,8 @@
       var tall = desk.getBoundingClientRect().height, all = stage.getBoundingClientRect().height;   /* the figure keeps its size when the window goes, so nothing below it jumps */
       var was = showFx() ? { win: F.box(win), cards: copies(F.cards.children), chips: copies(F.ustate.children) } : null;
       var sv = { cards: slips(F.cards.children).map(copy), chips: slips(F.ustate.children).map(copy) };
+      /* What an item carries that isn't saved (its caret, in Puri) doesn't go to the disk with it */
+      (was ? was.cards.map(function (c) { return c.node; }) : []).concat(sv.cards).forEach(function (nd) { each(nd.querySelectorAll(".cu"), function (x) { x.remove(); }); });
       F.disk = hush(function () { return F.m.quit(); });   /* the machine says what it saved: { data, ui: whether UI state went too } */
       if (!F.disk.ui) sv.chips = [];
       F.saved = sv;   /* the slips as they went to disk, for anyone who looks */

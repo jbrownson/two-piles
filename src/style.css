@@ -794,3 +794,15 @@ h2 .claim { font-weight: 300; color: var(--ink); }
 /* A row of the window, lit as an arrow lands on it */
 .uni .app-list li.flash, .uni .krow.flash { background: var(--q-scr); box-shadow: inset 0 0 0 1px var(--scr); }
 @media (prefers-reduced-motion: reduce) { .demo.running .ax.run .am { animation: none; } }
+
+/* Puri and deui: one state. Everything you keep is one pile under one name, in one colour: the slips that are violet in
+   the figures above are amber here, like the cards beside them. */
+.demo.fig-puri .ui-pile .pile-h::before, .demo.fig-deui .ui-pile .pile-h::before { display: none; }
+.demo.fig-puri .u, .demo.fig-deui .u { border-color: var(--data); background: var(--q-data), var(--panel); }
+.demo.fig-puri .u dt, .demo.fig-deui .u dt { color: var(--data-ink); }
+.demo.fig-puri .u.flash, .demo.fig-deui .u.flash { background: var(--data); }
+.demo.fig-puri .u.bad, .demo.fig-deui .u.bad { border-color: var(--bad); background: var(--q-bad), var(--panel); }
+.demo.fig-puri .u.bad dt, .demo.fig-deui .u.bad dt { color: var(--bad); }
+.demo.fig-puri .u.empty { border-color: var(--data); background: none; }
+.demo.fig-puri .cu { border-color: var(--data); color: var(--data-ink); }
+.demo.fig-puri .u-in:focus-visible, .demo.fig-deui .u-in:focus-visible { outline-color: var(--data); }

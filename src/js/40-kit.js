@@ -174,6 +174,8 @@
     return [text, c, ev.shift ? anchor : c];
   }
   function startItems() { var id = 1; return EIGHT.map(function (s) { return { id: id++, text: s, done: false }; }); }
+  /* Puri and deui have one state, not two piles. The figure still lays it out in two columns, but under one name and in one colour. */
+  function oneState(F) { F.dataHead.textContent = "state"; F.where.parentNode.firstChild.textContent = ""; }
   function copyItems(list) { return list.map(function (it) { var c = { id: it.id, text: it.text, done: it.done }; if (it.ui) c.ui = { caret: it.ui.caret, anchor: it.ui.anchor }; return c; }); }
   function topId(list) { var n = 1; list.forEach(function (it) { n = Math.max(n, it.id + 1); }); return n; }
   /* The selected text, for a label: from one column to another of a row's text */
@@ -374,7 +376,8 @@
      --------------------------------------------------------------------------------------------- */
   function PuriMachine(F) {
     var K = Kit(F), M = { pt: K.pt }, items = [], nextId = 9, home = "store", ui = null, hot = -1, tone = null, closed = false;
-    var WHERE = { store: "kept by you, in a store", items: "kept by you, in the items", table: "kept by you, in a table by row" };
+    oneState(F);
+    var WHERE = { store: "the focus, by item id", items: "the focus, on its item", table: "the focus, by row" };
     var P = {};   /* the panel's parts for the current home */
     function blank() { return home === "store" ? { focus: null, caret: 0, anchor: 0, scroll: 0 } : home === "items" ? { scroll: 0 } : { focus: null, rows: {}, scroll: 0 }; }
     function fRow() {
@@ -400,12 +403,12 @@
       else { ui.focus = i < 0 ? null : i + 1; if (i >= 0) ui.rows[i + 1] = { caret: c, anchor: a }; }
     }
     function setCaret(c, a) { var s = slot(); if (!s) return; s.caret = c; s.anchor = a == null ? c : a; }
-    function path() { return home === "store" ? "ui" : home === "items" ? "items[i].ui" : "ui.rows[i]"; }
+    function path() { return home === "store" ? "s" : home === "items" ? "s.items[i]" : "s.rows[i]"; }   /* `s` is the state: there is one of it */
     function caretCode(expr) { return path() + ".caret = " + expr; }
     function focusCode(expr) {
-      return home === "store" ? [["ui.focus = items[i].id", "ui"], ["ui.caret = " + expr, "ui"]]
-        : home === "items" ? [["items[i].ui = { caret: " + expr + " }", "ui"]]
-        : [["ui.focus = i", "ui"], ["ui.rows[i].caret = " + expr, "ui"]];
+      return home === "store" ? [["s.focus = s.items[i].id", "ui"], ["s.caret = " + expr, "ui"]]
+        : home === "items" ? [["s.items[i].caret = " + expr, "ui"]]
+        : [["s.focus = i", "ui"], ["s.rows[i].caret = " + expr, "ui"]];
     }
 
     /* The panel shows your state, and lets you edit it */
@@ -416,12 +419,12 @@
       return i;
     }
     function editCaret(v) { if (fRow() < 0) return; tone = null; setCaret(v); rerun("you edited it:", [[caretCode(String(v)), "ui"]], null, true); }
-    function editFocus(v) { tone = null; ui.focus = Math.min(Math.max(1, v), Math.max(1, items.length)); if (ui.rows[ui.focus] == null) ui.rows[ui.focus] = { caret: 0, anchor: 0 }; F.setNote("", ""); rerun("you edited it:", [["ui.focus = " + ui.focus, "ui"]], null, true); }
-    function editScroll(v) { ui.scroll = Math.min(v, K.maxScroll()); rerun("you edited it:", [["ui.scroll = " + ui.scroll, "ui"]], null, true); }
+    function editFocus(v) { tone = null; ui.focus = Math.min(Math.max(1, v), Math.max(1, items.length)); if (ui.rows[ui.focus] == null) ui.rows[ui.focus] = { caret: 0, anchor: 0 }; F.setNote("", ""); rerun("you edited it:", [["s.focus = " + ui.focus, "ui"]], null, true); }
+    function editScroll(v) { ui.scroll = Math.min(v, K.maxScroll()); rerun("you edited it:", [["s.scroll = " + ui.scroll, "ui"]], null, true); }
     function chip(dt) { var u = h("div", "u", null, F.ustate); var a = h("dt", null, dt, u), b = h("dd", null, null, u); return { u: u, dt: a, dd: b }; }
     function buildPanel() {
       F.ustate.textContent = ""; P = {}; F.where.textContent = WHERE[home];
-      if (home === "items") { var e = h("div", "u empty", null, F.ustate); h("dt", null, "Focus, caret and selection are in the items, above.", e); }
+      if (home === "items") { var e = h("div", "u empty", null, F.ustate); h("dt", null, "The focus, caret and selection are on the item.", e); }
       else {
         P.focus = chip("focus"); P.caret = chip(home === "table" ? "row" : "caret");
         if (home === "table") { P.focus.dd.appendChild(document.createTextNode("row ")); P.focusIn = numIn("puri-focus", "Focused row", 1, editFocus); P.focus.dd.appendChild(P.focusIn); P.caret.dd.appendChild(document.createTextNode("caret ")); }
@@ -475,7 +478,7 @@
     function linked(name, lines, at, gap) {
       var mine = function () { var i = fRow(); return i >= 0 ? F.cards.children[i] : null; };   /* the card of the focused item */
       var slip = function (text) {
-        if (home === "items" && /^items\[i\]\.ui/.test(text)) return function () { var c = mine(); return c ? c.querySelector(".cu") || c : null; };
+        if (home === "items" && /^s\.items\[i\]\.(caret|anchor)/.test(text)) return function () { var c = mine(); return c ? c.querySelector(".cu") || c : null; };
         if (/scroll/.test(text)) return function () { return P.scroll ? P.scroll.u : null; };
         if (/focus/.test(text)) return function () { return P.focus ? P.focus.u : mine(); };
         if (/anchor/.test(text)) return function () { return P.sel ? P.sel.u : mine(); };
@@ -485,44 +488,44 @@
       var out = lines.map(function (L) {
         var link = told ? null : L[1] === "data" ? (name === "on launch:" ? { to: F.dataHead } : at != null ? { near: 1, to: function () { return F.cards.children[at]; } } : gap != null ? Object.assign({ near: 1 }, F.gapAt(gap)) : { to: F.dataHead })
           : L[1] === "ui" ? { to: name === "on launch:" ? F.ustate : slip(L[0]) } : L[1] === "missing" ? { to: slip(L[0]), miss: 1 } : null;
-        return [L[0], L[1], L[1] === "data" ? "app state" : L[1] === "ui" ? "UI state" : L[1] === "missing" ? "UI state · left out" : "", "pile", link];
+        return [L[0], L[1] === "ui" ? "data" : L[1], L[1] === "data" || L[1] === "ui" ? "state" : L[1] === "missing" ? "state · left out" : "", "pile", link];   /* one state, so one colour: every line that runs edits it */
       });
       return out;
     }
     function del(r) {
-      var f = fRow(), was = f >= 0 ? items[f] : null, lines = [["items.remove(i)", "data"]];
+      var f = fRow(), was = f >= 0 ? items[f] : null, lines = [["s.items.remove(i)", "data"]];
       if (evAt == null) evAt = rowY(r);
       F.headPulse(K.row(r));
       items.splice(r, 1);
-      if (home === "table" && ui.focus != null && r <= ui.focus - 1) lines.push([r < ui.focus - 1 ? "ui.focus -= 1" : "ui.focus = …", "missing", "left out"]);
-      else if (was) lines.push([home === "table" ? "the rows above didn’t move: nothing to fix" : home === "store" ? "ui.focus names the item: nothing to fix" : "the focus is on the item: nothing to fix", "soft"]);
+      if (home === "table" && ui.focus != null && r <= ui.focus - 1) lines.push([r < ui.focus - 1 ? "s.focus -= 1" : "s.focus = …", "missing", "left out"]);
+      else if (was) lines.push([home === "table" ? "the rows above didn’t move: nothing to fix" : home === "store" ? "s.focus names the item: nothing to fix" : "the focus is on the item: nothing to fix", "soft"]);
       var g = fRow(), now = g >= 0 ? items[g] : null;
       tone = null;
       if (!was) F.setNote("", "");
       else if (!now) F.setNote("bad", "The focused item is gone, and no line says where the focus goes.");
       else if (now === was) F.setNote("good", home === "store" ? "Your focus names the item, so it followed." : home === "items" ? "The focus is on the item, so it went with it." : "The focus is still on its item.");
-      else { tone = "jumped"; F.setNote("bad", "Your table says row " + ui.focus + ". Row " + ui.focus + " is now " + q(now.text) + "."); }
+      else { tone = "jumped"; F.setNote("bad", "The state says row " + ui.focus + ". Row " + ui.focus + " is now " + q(now.text) + "."); }
       rerun("on delete(i):", lines, null, false, r);
     }
     K.on = function (ev) {
       if (closed) return;
       if (ev.type === "hot") { hot = ev.row; K.setHot(hot); return; }
       evAt = ev.type === "scroll" ? F.host : ev.row != null ? rowY(ev.row) : fRow() >= 0 ? rowY(fRow()) : F.host;
-      if (ev.type === "scroll") { ui.scroll = ev.y; if (tone !== "jumped") F.setNote("", ""); rerun("on scroll(y):", [["ui.scroll = y", "ui"]], null, true); return; }
+      if (ev.type === "scroll") { ui.scroll = ev.y; if (tone !== "jumped") F.setNote("", ""); rerun("on scroll(y):", [["s.scroll = y", "ui"]], null, true); return; }
       var i = fRow();
       if (ev.type === "select") {
         tone = null; F.setNote("", "");
         var moved = i !== ev.row;
         setFocus(ev.row, ev.b, ev.a);
-        rerun("on select(i, a, b):", (moved && home !== "items" ? [[home === "store" ? "ui.focus = items[i].id" : "ui.focus = i", "ui"]] : []).concat(
-          home === "store" ? [["ui.anchor = a", "ui"], ["ui.caret = b", "ui"]] : [[path() + " = { anchor: a, caret: b }", "ui"]]), null, home !== "items");
+        rerun("on select(i, a, b):", (moved && home !== "items" ? [[home === "store" ? "s.focus = s.items[i].id" : "s.focus = i", "ui"]] : []).concat(
+          [[path() + ".anchor = a", "ui"], [path() + ".caret = b", "ui"]]), null, home !== "items");
         return;
       }
       if (ev.type === "press") {
         if (ev.part === "x") { del(ev.row); return; }
         tone = null; F.setNote("", "");
         if (ev.part === "text") { setFocus(ev.row, ev.col); rerun("on click(i, col):", focusCode("col")); }
-        else { items[ev.row].done = !items[ev.row].done; rerun("on tick(i):", [["items[i].done = !items[i].done", "data"]], ev.row); }
+        else { items[ev.row].done = !items[ev.row].done; rerun("on tick(i):", [["s.items[i].done = !s.items[i].done", "data"]], ev.row); }
         return;
       }
       tone = null; F.setNote("", "");
@@ -530,12 +533,12 @@
       var it = items[i], c = caret(), an = anchor();
       if (ev.type === "key" && ev.key === "Enter") {
         items.splice(i + 1, 0, { id: nextId++, text: "", done: false }); setFocus(i + 1, 0);
-        rerun("on enter(i):", [["items.insert(i + 1, blank)", "data"]].concat(focusCode("0")), i + 1); return;
+        rerun("on enter(i):", [["s.items.insert(i + 1, blank)", "data"]].concat(focusCode("0")), i + 1); return;
       }
       if (ev.type === "key" && ev.key === "Backspace" && it.text === "") {
         F.headPulse(K.row(i)); items.splice(i, 1);
         if (items.length) { var p = Math.max(0, i - 1); setFocus(p, items[p].text.length); } else setFocus(-1);
-        rerun("on backspace(i):", [["items.remove(i)", "data"]].concat(focusCode("end")), null, false, i); return;
+        rerun("on backspace(i):", [["s.items.remove(i)", "data"]].concat(focusCode("end")), null, false, i); return;
       }
       if (ev.type === "key" && (ev.key === "ArrowUp" || ev.key === "ArrowDown")) {
         var n = i + (ev.key === "ArrowUp" ? -1 : 1);
@@ -545,7 +548,7 @@
       var r = editLine(it.text, c, ev, an);
       if (!r) return;
       var lines = [];
-      if (r[0] !== it.text) { it.text = r[0]; lines.push(["items[i].text = edit(text, caret, key)", "data"]); }
+      if (r[0] !== it.text) { it.text = r[0]; lines.push(["s.items[i].text = edit(text, caret, key)", "data"]); }
       setCaret(r[1], r[2]); lines.push([caretCode(r[1] === c + 1 ? "caret + 1" : r[1] === c - 1 ? "caret - 1" : String(r[1])), "ui"]);
       rerun(ev.type === "text" ? "on input(i, key):" : "on key(i, key):", lines, lines.length > 1 ? i : null);
     };
@@ -569,20 +572,21 @@
       buildPanel();
       if (live) { F.last = {}; F.setNote("", ""); F.lines("moved, and nothing else changed", []); rerun(null); }
     };
-    /* Quitting saves both piles, because both are yours */
+    /* There is one state, and saving it is one line. What shouldn't outlive the app (the focus, the caret, the selection,
+       how far the list is scrolled) is stripped out first, so a smaller structure goes to disk. Loading builds the full
+       state back from it, with those parts at their defaults. Keeping any of them would be a change to strip(). */
     M.quit = function () {
-      var saved = { items: copyItems(items), ui: JSON.parse(JSON.stringify(ui)), home: home };
+      var saved = { items: items.map(function (it) { return { id: it.id, text: it.text, done: it.done }; }) };
       K.blur(); K.draw({ rows: [], scroll: 0 }); closed = true;
-      F.lines("on quit:", [["disk.save(items)", "data", "app state", "pile", { to: F.diskEl, near: 1 }], ["disk.save(ui)", "ui", "UI state", "pile", { to: F.diskEl, near: 1 }]]);
+      F.lines("on quit:", [["disk.save(strip(s))", "data", "state", "pile", { to: F.diskEl, near: 1 }]]);
       F.setNote("", ""); F.cardsOff();
-      return { data: saved, ui: true };
+      return { data: saved, ui: false };
     };
     M.launch = function (disk) {
-      items = copyItems(disk.data.items); nextId = topId(items); ui = JSON.parse(JSON.stringify(disk.data.ui)); closed = false; hot = -1; tone = null;
+      items = copyItems(disk.data.items); nextId = topId(items); ui = blank(); closed = false; hot = -1; tone = null;
       buildPanel(); F.last = {};
-      rerun("on launch:", [["items = disk.load()", "data"], ["ui = disk.load()", "ui"]]);
-      if (fRow() >= 0) F.setNote("good", "Focus, caret, selection and scroll came back from disk. They’re only data.");
-      else if (ui.scroll) F.setNote("good", "The scroll position came back from disk. It’s only data.");
+      rerun("on launch:", [["s = restore(disk.load())", "data"]]);
+      F.setNote("", "strip() left the focus, caret, selection and scroll out, so they start over.");
     };
     M.reset = function () {
       items = startItems(); nextId = 9; ui = blank(); hot = -1; tone = null; closed = false;
@@ -592,28 +596,27 @@
   }
 
   LiveFig("puri", {
-    kit: true, label: "To-do list, Puri", where: "kept by you", keeps: "yours", mach: "your handler",
+    kit: true, label: "To-do list, Puri", where: "", keeps: "yours", mach: "your handler",
     link: { text: "view(state)", sub: "all 8 rows", from: function (F) { return [F.cards, F.ustate]; } },
-    switches: [{ name: "home", label: "Where you keep UI state", options: [["store", "In a store"], ["items", "In the items"], ["table", "In a table by row"]] }],
-    turn: "The app is live, and so is the UI state: change the caret’s number and the caret moves, or change the scroll’s and the list scrolls. Quit with the close box and launch it again, and it all comes back. Drag the slider to go back to the example.",
+    switches: [{ name: "home", label: "How the state holds the focus", options: [["store", "Focus by item id"], ["items", "Focus on the item"], ["table", "Focus by row"]] }],
+    turn: "The app is live, and so is its state: change the caret’s number and the caret moves, or change the scroll’s and the list scrolls. The close box quits it and saves to disk, and the icon starts it again. Drag the slider to go back to the example.",
     machine: function (F) { return PuriMachine(F); },
     script: function (F) {
       return story(F, {
         cap: function (k) {
           var home = F.m.home();
           return {
-            "1": "Click into “Fix scroll bug”. Your handler writes the focus and the caret into your own state, and the view reruns.",
-            "2": "Type “today” at the end. Each key edits both piles: the text in app state, the caret in UI state.",
-            "3": "Select a word. Your handler writes the selection into your state, like any other value.",
+            "1": "Click into “Fix scroll bug”. Your handler writes the focus and the caret into the state, and the view reruns.",
+            "2": "Type “today” at the end. Each key edits the state twice: the item’s text, and the caret.",
+            "3": "Select a word. Your handler writes the selection into the state, like any other value.",
             "4a": "Delete “Call Phil”, the row above yours.",
-            "4": home === "store" ? "Delete “Call Phil”, the row above yours. Your focus names the item, so the caret and selection stay with it. No keys are involved. It’s your data."
+            "4": home === "store" ? "Delete “Call Phil”, the row above yours. The focus names the item by its id, so the caret and selection stay with it."
               : home === "items" ? "Delete “Call Phil”, the row above yours. The focus sits on the item itself, so it goes where the item goes."
-              : "Delete “Call Phil”, the row above yours. Your table says row 3, and row 3 is now “Write essay”. It’s the same mismatch as before, and here it is one line in your own handler.",
-            "5": "Scroll. The scroll position is yours as well: a number your handler writes and the view reads.",
+              : "Delete “Call Phil”, the row above yours. The state says row 3, and row 3 is now “Write essay”. It’s the same mismatch as before, and here it is one line in your own handler.",
+            "5": "Scroll. The scroll position is in the state as well: a number your handler writes and the view reads.",
             "6a": "Quit the app with its close box.",
-            "6q": "Quit the app with its close box. Both piles go to disk, because both are yours.",
-            "6": home === "table" ? "Launch it again. Focus, caret, selection and scroll all come back from disk, wrong row and all. They’re only data."
-              : "Launch it again. Focus, caret, selection and scroll all come back from disk, where every figure above lost them. They’re only data."
+            "6q": "Quit the app with its close box. One line saves the state, with the parts that shouldn’t outlive the app stripped out first.",
+            "6": "Launch it again. The state is built back from what was saved. The focus, caret, selection and scroll start over, as in every figure above, and here that is your choice: strip() is yours."
           }[k];
         }
       });
@@ -627,6 +630,7 @@
      --------------------------------------------------------------------------------------------- */
   function DeuiMachine(F) {
     var K = Kit(F), M = { pt: K.pt }, items = [], nextId = 9, ui = { focus: null, caret: 0, anchor: 0, scroll: 0 }, policy = "next", broken = false, wrong = false, closed = false;
+    oneState(F);
     var SAYS = { next: "the next row takes the focus", prev: "the previous row takes the focus", none: "nothing has the focus" };
     var by = "click";   /* how the last change was made: with a click or with a key */
     var SHORT = { focus: "focus", caret: "caret", select: "select", scroll: "scroll", text: "insert", erase: "erase", cut: "erase", tick: "tick", del: "delete row", add: "add row" };
@@ -722,8 +726,8 @@
          the window at the row it touched, and each change to UI state goes to its slip. */
       var data = !/^(focus|caret|select|scroll)$/.test(ch.type), bad = check(ch.type === "scroll");
       /* The first panel: the change, and what it does to the two piles you keep. */
-      var lines = [[label(ch), data ? "data" : "ui", data ? "app state" : "", data ? "pile" : "", data ? (at != null ? { near: 1, to: function () { return F.cards.children[at]; } } : ch.type === "del" ? Object.assign({ near: 1 }, F.gapAt(r)) : { to: F.dataHead }) : null]];
-      uis.forEach(function (e) { lines.push([e[0], "ui", "UI state", "pile", { to: F.u[/^focus/.test(e[0]) ? "focus" : /^caret/.test(e[0]) ? "caret" : /^selection/.test(e[0]) ? "selection" : "scroll"] }]); });
+      var lines = [[label(ch), "data", data ? "state" : "", data ? "pile" : "", data ? (at != null ? { near: 1, to: function () { return F.cards.children[at]; } } : ch.type === "del" ? Object.assign({ near: 1 }, F.gapAt(r)) : { to: F.dataHead }) : null]];
+      uis.forEach(function (e) { lines.push([e[0], "data", "state", "pile", { to: F.u[/^focus/.test(e[0]) ? "focus" : /^caret/.test(e[0]) ? "caret" : /^selection/.test(e[0]) ? "selection" : "scroll"] }]); });
       /* The second, across the derivative: the edits to the screen, and whether they add up to a rerun. */
       if (fixed) lines.push(["the screen was wrong, so it was redrawn first", "soft", "", "", null, 2]);
       scr.forEach(function (e) { lines.push([e[0], "view", "", "", { to: F.win, toY: e[2], side: "r", dy: e[3] }, 2]); });
@@ -769,24 +773,22 @@
       policy = val;
       if (!closed) F.setNote("", "If you delete the row you’re in, " + SAYS[val] + ". Try it.");
     };
-    /* Quitting saves both piles. Launching draws the whole view once, the only time it is ever run. */
+    /* One state, saved in one line with what shouldn't outlive the app stripped out of it. Launching builds the state
+       back and draws the whole view once, the only time it is ever run. */
     M.quit = function () {
-      var saved = { items: copyItems(items), ui: { focus: ui.focus, caret: ui.caret, anchor: ui.anchor, scroll: ui.scroll } };
+      var saved = { items: items.map(function (it) { return { id: it.id, text: it.text, done: it.done }; }) };
       K.blur(); K.draw({ rows: [], scroll: 0 }); closed = true; wrong = false;
-      F.lines("on quit:", [["disk.save(items)", "data", "app state", "pile", { to: F.diskEl, near: 1 }], ["disk.save(ui)", "ui", "UI state", "pile", { to: F.diskEl, near: 1 }]]);
+      F.lines("on quit:", [["disk.save(strip(s))", "data", "state", "pile", { to: F.diskEl, near: 1 }]]);
       F.setNote("", ""); F.cardsOff();
       F.setU("focus", "nothing", null, null); F.setU("caret", "—", "—", null); F.setU("selection", "none", "none", null); F.setU("scroll", "0 px", 0, null);
-      return { data: saved, ui: true };
+      return { data: saved, ui: false };
     };
     M.launch = function (disk) {
-      var u = disk.data.ui;
-      items = copyItems(disk.data.items); nextId = topId(items); ui = { focus: u.focus, caret: u.caret, anchor: u.anchor, scroll: u.scroll }; closed = false;
-      K.draw({ rows: spec(), scroll: ui.scroll }); K.setHot(-1); K.setFocus(ui.focus == null ? -1 : ui.focus, ui.caret, null, sel());
-      F.lines("on launch:", [["items = disk.load()", "data", "app state", "pile", { to: F.dataHead }], ["ui = disk.load()", "ui", "UI state", "pile", { to: F.ustate }]],
-        { fire: true, sum2: "none: the whole view ran, this once" });
+      items = copyItems(disk.data.items); nextId = topId(items); ui = { focus: null, caret: 0, anchor: 0, scroll: 0 }; closed = false;
+      K.draw({ rows: spec(), scroll: 0 }); K.setHot(-1); K.setFocus(-1, 0, null, sel());
+      F.lines("on launch:", [["s = restore(disk.load())", "data", "state", "pile", { to: F.dataHead }]], { fire: true, sum2: "none: the whole view ran, this once" });
       F.last = {}; panel(); F.cardsFor(items);
-      if (ui.focus != null) F.setNote("good", "Focus, caret, selection and scroll came back from disk. They’re only data.");
-      else if (ui.scroll) F.setNote("good", "The scroll position came back from disk. It’s only data.");
+      F.setNote("", "strip() left the focus, caret, selection and scroll out, so they start over.");
     };
     M.reset = function () {
       items = startItems(); nextId = 9; ui = { focus: null, caret: 0, anchor: 0, scroll: 0 }; wrong = false; closed = false;
@@ -800,7 +802,7 @@
   }
 
   LiveFig("deui", {
-    kit: true, label: "To-do list, deui", where: "kept by you", keeps: "yours", mach: "the change", two: "the screen’s change",
+    kit: true, label: "To-do list, deui", where: "", keeps: "yours", mach: "the change", two: "the screen’s change",
     link: { text: "view(state)", sub: "ran once, at launch", from: function (F) { return [F.cards, F.ustate]; } },
     cross: { text: "derivative", sub: "on every change", dy: -22 },
     fields: [["focus", "focus", "nothing"], ["caret", "caret", "—"], ["selection", "selection", "none"], ["scroll", "scroll", "0 px"]],
@@ -813,17 +815,17 @@
       return story(F, {
         cap: function (k) {
           return {
-            "1": "Click into “Fix scroll bug”. A click is a change to UI state, and it’s applied directly.",
+            "1": "Click into “Fix scroll bug”. A click is a change to the state, and it’s applied directly.",
             "2": "Type “today” at the end. Each key is one small change. The derivative turns it into one edit to the screen and one to the caret.",
-            "3": "Select a word. Another change to UI state, applied directly. Nothing is rerun.",
+            "3": "Select a word. Another change to the state, applied directly. Nothing is rerun.",
             "4a": "Delete “Call Phil”, the row above yours.",
             "4": F.m.broken()
               ? "Delete “Call Phil”, the row above yours. This derivative leaves out the edit that takes the row off the screen, the same kind of slip as in retained mode. Here the check sees at once that the screen no longer matches a rerun."
               : "Delete “Call Phil”, the row above yours. The change says which row went, so the screen gets two edits, your focus moves from row 3 to row 2 with its caret and selection, and nothing is rerun.",
             "5": "Scroll. One more change, and the derivative turns it into one edit to the screen: shift the list.",
             "6a": "Quit the app with its close box.",
-            "6q": "Quit the app with its close box. Both piles go to disk, because both are yours.",
-            "6": "Launch it again. The view is drawn once, from the data and from the UI state that came back with it."
+            "6q": "Quit the app with its close box. One line saves the state, with the parts that shouldn’t outlive the app stripped out first.",
+            "6": "Launch it again. The state is built back from what was saved, and the view is drawn once from it."
           }[k];
         }
       });

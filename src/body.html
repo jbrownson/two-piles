@@ -96,22 +96,23 @@
   <section class="era proposal" id="era-puri">
     <div class="era-head"><h2><span class="case">Puri<span class="colon">: </span></span><span class="claim">widgets that keep no state</span></h2></div>
     <div class="todo" role="note"><p class="todo-h">To write · Puri</p><ul>
-      <li>Answers the first question directly: UI state is plain data in your program, so how it’s managed is your choice, the way layout is.</li>
+      <li>Answers the first question directly: there is no separate UI state. Focus, caret, selection and scroll are fields of your one state, so how they’re held is your choice, the way layout is.</li>
       <li>A key message: perhaps the biggest cost of the approaches above is that each place state is stored needs an identity that stays the same from one frame to the next. Keys and IDs are that cost. Puri doesn’t make the need go away. It makes it explicit, and yours to answer in the way that suits your app: on the item, in a keyed store, by position with care, or with a general system plugged in.</li>
       <li>The figure’s switch is that choice. Its third setting, a table by row, fails the way position keys fail, and the fix is one line in your own handler.</li>
       <li>An objection worth quoting: “immediate mode libraries that shunt all state management onto the application are out of the question.” A reply: you pick a store, and it can be the same keyed table. The widgets just don’t pick for you.</li>
       <li>Another: web developers have tried “everything in the store”, and many moved away from it. What’s different here: this goes down to the caret, and plumbing is cheap to write now. Check that history before publishing.</li>
-      <li>It doesn’t merge the piles. The figure’s three homes are all yours to choose.</li>
-      <li>The payoff in the figure: quit and relaunch, and the caret, the selection and the scroll position all come back, because they were yours to save.</li>
+      <li>It merges the piles: there is one state, drawn in one colour. What the approaches above call UI state is here just the part you strip out when you save and build back when you load.</li>
+      <li>Saving in the figure is one line, <code>disk.save(strip(s))</code>, and a relaunch starts the focus and caret over, as in every figure above. Keeping the caret across launches would be a small change to <code>strip</code>, which the approaches above can’t offer.</li>
+      <li>Also possible: finer control over how UI elements change state, such as how multiple clicks behave. The roc-puri to-do example works this out in detail.</li>
     </ul></div>
     <div class="fig" data-fig="puri"></div>
     <dl class="verdict">
-      <div class="q1"><dt>UI state</dt><dd>In your program. Widgets keep none, so focus, caret, selection and scroll are plain data, held wherever suits the app.</dd></div>
+      <div class="q1"><dt>UI state</dt><dd>Nowhere separate. Widgets keep none, so focus, caret, selection and scroll are fields of your one state, shaped however suits the app.</dd></div>
       <div class="q2"><dt>Changes</dt><dd>Your handler edits your data, and the whole view is rerun.</dd></div>
-      <div class="plus"><dt>Strength</dt><dd>UI state can be saved with everything else, tested, and managed however you choose. How it is tied to your data is your decision, in the open, not a key or an ID the toolkit asks for.</dd></div>
-      <div class="minus"><dt>Trade-off</dt><dd>Handlers edit both piles again, though both are now your own data. And widgets that draw themselves give up what the platform’s text boxes provide, such as accessibility and input methods.</dd></div>
+      <div class="plus"><dt>Strength</dt><dd>One state. It can be tested, saved in one line with whatever you choose stripped out, and managed however you like. How its parts are tied to your data is your decision, in the open, not a key or an ID the toolkit asks for.</dd></div>
+      <div class="minus"><dt>Trade-off</dt><dd>Each handler now writes everything the widgets used to keep for you, the caret included. And widgets that draw themselves give up what the platform’s text boxes provide, such as accessibility and input methods.</dd></div>
     </dl>
-    <p class="cap">That first trade-off, two edits for every change, is where <a href="#era-deui">deui</a> starts.</p>
+    <p class="cap">That first trade-off, a hand-written edit for every part of the state a change touches, is where <a href="#era-deui">deui</a> starts.</p>
   </section>
 
   <section class="era proposal" id="era-deui">
@@ -119,7 +120,7 @@
     <div class="todo" role="note"><p class="todo-h">To write · deui</p><ul>
       <li>Answers the second question directly: the change is kept, not recovered.</li>
       <li>The name: deui, said “dewey”. It’s dUI, the change in the UI. It also reads as de-UI, taking something away, and that isn’t wrong.</li>
-      <li>The change is a value. A derivative turns the data’s change into the screen’s change and the UI state’s change.</li>
+      <li>The change is a value. A derivative turns the state’s change into the screen’s change.</li>
       <li>Identity again: here state can be kept by position and still follow its item, because the change says how the positions moved. In the figure the focus goes from row 3 to row 2. No key is needed, since nothing has to be matched up afterwards.</li>
       <li>Precedent: the best text editors already work this way. CodeMirror 6 and ProseMirror carry every edit as a change and map the selection through it. They do it by hand, for one widget.</li>
       <li>In retained mode a missing line went unseen. Here a derivative with a missing edit breaks the law, and a check catches it.</li>
@@ -129,9 +130,9 @@
     <div class="fig" data-fig="deui"></div>
     <p class="cap">In this figure the derivative is hand-written JavaScript, and the check reruns the view after every change to compare. In lean-puri the check is a proof, done once, before the program runs.</p>
     <dl class="verdict">
-      <div class="q1"><dt>UI state</dt><dd>In your program, as in Puri.</dd></div>
-      <div class="q2"><dt>Changes</dt><dd>Each change is kept as a value. A derivative turns it into the edits to the screen and to UI state, and a proof shows the result equals a rerun.</dd></div>
-      <div class="plus"><dt>Strength</dt><dd>The work is the size of the change, not the size of the view, and one change accounts for both the screen and UI state.</dd></div>
+      <div class="q1"><dt>UI state</dt><dd>Nowhere separate: in your one state, as in Puri.</dd></div>
+      <div class="q2"><dt>Changes</dt><dd>Each change is kept as a value. A derivative turns it into the edits to the screen, and a proof shows the result equals a rerun.</dd></div>
+      <div class="plus"><dt>Strength</dt><dd>The work is the size of the change, not the size of the view, and one change accounts for both the state and the screen.</dd></div>
       <div class="minus"><dt>Trade-off</dt><dd>Every view needs a derivative and a proof of it. The proof covers correctness, not speed. So far it has been done for one widget.</dd></div>
     </dl>
     <p class="cap">Which leaves a fair question: who writes all those derivatives, and why would you trust them?</p>
@@ -161,8 +162,8 @@
         <tr><th scope="row">Retained mode</th><td data-q="Where UI state lives">In the widgets</td><td data-q="What ties it to your data">The widget object itself, which the toolkit keeps alive</td><td data-q="How the screen learns what changed">Your handler passes it on, in a line of its own</td></tr>
         <tr><th scope="row">React</th><td data-q="Where UI state lives">In the DOM</td><td data-q="What ties it to your data">A key you give each row, or else its position</td><td data-q="How the screen learns what changed">It reruns the view and compares</td></tr>
         <tr><th scope="row">Immediate mode</th><td data-q="Where UI state lives">In the library’s store</td><td data-q="What ties it to your data">An ID you give each widget</td><td data-q="How the screen learns what changed">It never needs to: it redraws everything, every frame</td></tr>
-        <tr class="prop"><th scope="row">Puri <small>proposed</small></th><td data-q="Where UI state lives">In your program</td><td data-q="What ties it to your data">Your choice: on the item, in a keyed store, or by position</td><td data-q="How the screen learns what changed">It reruns the view on each change</td></tr>
-        <tr class="prop"><th scope="row">deui <small>proposed</small></th><td data-q="Where UI state lives">In your program</td><td data-q="What ties it to your data">Your choice, and kept by position it moves with the change</td><td data-q="How the screen learns what changed">From the change, through a checked derivative</td></tr>
+        <tr class="prop"><th scope="row">Puri <small>proposed</small></th><td data-q="Where UI state lives">In your one state, with everything else</td><td data-q="What ties it to your data">Your choice: on the item, in a keyed store, or by position</td><td data-q="How the screen learns what changed">It reruns the view on each change</td></tr>
+        <tr class="prop"><th scope="row">deui <small>proposed</small></th><td data-q="Where UI state lives">In your one state, with everything else</td><td data-q="What ties it to your data">Your choice, and kept by position it moves with the change</td><td data-q="How the screen learns what changed">From the change, through a checked derivative</td></tr>
       </tbody>
     </table></div>
     <div class="todo" role="note"><p class="todo-h">To write · ending</p><ul>

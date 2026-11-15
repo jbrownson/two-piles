@@ -4,7 +4,7 @@
 // tree, rows of the window, headings and notes. The last few pixels at each end are let off, since an arrow starts and
 // ends right beside something. Marks between a tree's paired rows are not arrows and are not checked.
 const { PAGE, launch, devices } = require('./lib');
-const SWITCHES = { hand: ['Leave a line out'], react: ['No keys'], imm: ['IDs from position'], puri: ['In the items', 'In a table by row'], deui: ['Break the derivative'] };
+const SWITCHES = { hand: ['Leave a line out'], react: ['No keys'], imm: ['IDs from position'], puri: ['Focus on the item', 'Focus by row'], deui: ['Break the derivative'] };
 const SIZES = [['desktop', { viewport: { width: 1200, height: 900 } }], ['narrow', { viewport: { width: 1024, height: 900 } }], ['tablet', { viewport: { width: 820, height: 1100 } }], ['phone', { ...devices['iPhone 13'] }], ['small phone', { ...devices['iPhone SE'] }]];
 (async () => {
   const b = await launch();

@@ -21,8 +21,8 @@ const { PAGE, launch, devices } = require('./lib');
     ['hand', 'Leave a line out', s => s.miss === 1 && /left out/.test(s.lines), 'Put the line back'],
     ['react', 'No keys', s => /by position/.test(s.lines) && /7 writes/.test(s.lines) && s.arrows >= 4, 'With keys'],
     ['imm', 'IDs from position', s => s.arrows >= 3, 'IDs from items'],
-    ['puri', 'In the items', s => s.wide === 1, 'In a store'],
-    ['puri', 'In a table by row', s => s.miss === 1, 'In a store'],
+    ['puri', 'Focus on the item', s => s.wide === 1, 'Focus by item id'],
+    ['puri', 'Focus by row', s => s.miss === 1, 'Focus by item id'],
     ['deui', 'Break the derivative', s => s.miss === 1 && /✗/.test(s.lines), 'Fix the derivative']]) {
     const fig = p.locator(`.fig[data-fig="${name}"]`);
     const marks = JSON.parse(await fig.getAttribute('data-marks'));
