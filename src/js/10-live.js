@@ -248,7 +248,7 @@
     F.diskEl = hd;   /* the disk on the desktop, for the arrows from what is saved on quitting */
     F.running = function (on) { stage.classList.toggle("running", !!on); };   /* frames are being drawn: the arrow that never stops is moving */
 
-    var machFloor = 0, mach2Floor = 0, links = null, sparks = [], sparkFresh = false, linkDue = false, linkGen = 0, lastSig = "", lastSigAt = 0, flashQ = [], SLOWX = window.__twoPilesSlow || 1;
+    var machFloor = 0, mach2Floor = 0, links = null, sparks = [], sparkFresh = false, linkDue = false, linkGen = 0, lastSig = "", lastRunAt = 0, trailT = 0, BURST = 350, flashQ = [], SLOWX = window.__twoPilesSlow || 1;
     function linkSoon() { if (linkDue) return; linkDue = true; Promise.resolve().then(function () { linkDue = false; drawLinks(false); }); }
     function res(x) { x = typeof x === "function" ? x() : x; return x && x.nodeType ? (x.isConnected ? x : null) : x; }
     function rect(x) {
@@ -320,12 +320,20 @@
       return pathOf(body);
     }
     /* Draw every arrow. Those that have just happened are drawn one after another, each line of code showing
-       as its turn comes. The rest (a second key in a burst, a new width, a step reached with the slider) just appear. */
-    function drawLinks(again) {
+       as its turn comes. The rest (a new width, a step reached with the slider) just appear.
+       Input can come faster than that can be shown: typing, a drag, a scroll. Starting over on every key would hide
+       the lines and bring them back many times a second. So a run that comes within BURST of the one before just
+       appears, and once nothing more has come for that long, what is showing is traced once (`echo`). And a run with
+       the same lines as the one before hides nothing: the lines stay, and the arrows are traced over (`calm`). */
+    function drawLinks(again, echo) {
       var gen = ++linkGen, spec = links, now = performance.now(), steps = [], lanes = {};
-      var live = !again && !reduce && !!spec && spec.fresh && !spec.quiet, sig = spec ? spec.sum + "|" + spec.lines.map(function (L) { return L[0] + L[1]; }).join("|") : "";
-      if (live && sig === lastSig && now - lastSigAt < 170 * SLOWX) live = false;   /* a held key, a drag: the same lines many times a second */
-      if (live) { lastSig = sig; lastSigAt = now; }
+      var fresh = !again && !echo && !!spec && spec.fresh && !spec.quiet, sig = spec ? (spec.sum + "|" + spec.lines.map(function (L) { return L[0] + L[1]; }).join("|")).replace(/“[^”]*”|\d+/g, "") : "";   /* the same lines with other values in them (another row, another column, another letter) count as the same */
+      var live = !reduce && (fresh || (!!echo && !!spec && !spec.quiet)), calm = !!echo || (fresh && sig === lastSig);
+      if (fresh) {
+        clearTimeout(trailT);
+        if (live && now - lastRunAt < BURST * SLOWX) { live = false; trailT = setTimeout(function () { if (links === spec && !F.quiet && root.isConnected) drawLinks(false, true); }, BURST * SLOWX); }
+        lastRunAt = now; lastSig = sig;
+      }
       if (spec) spec.fresh = false;
       var sparking = !again && !reduce && sparkFresh; sparkFresh = false;
       ax.textContent = "";
@@ -422,19 +430,19 @@
             if (dot) { var q = p.getPointAtLength(L * u); dot.setAttribute("x", q.x - 3.5); dot.setAttribute("y", q.y - 3.5); }
             p.style.strokeDashoffset = L * (1 - u);
           }).then(function () { if (dot) dot.remove(); p.remove(); });
-        })).then(function () { if (a.then) a.then(); if (gen !== linkGen) return; a.g.classList.remove("wait"); a.hit.forEach(function (n) { if (n.isConnected) flashNow(n); }); });
+        })).then(function () { if (a.then && !echo) a.then(); if (gen !== linkGen) return; a.g.classList.remove("wait"); a.hit.forEach(function (n) { if (n.isConnected) flashNow(n); }); });
       }
       /* Not animated: everything is simply there. That includes any line an earlier, animated drawing had not got round to showing. */
       if (!live) steps.forEach(function (st) { if (st.line) st.line.classList.remove("wait"); st.arrows.forEach(function (a) { if (a.then) a.then(); }); if (st.run) st.run(false); });
       if (live) {
-        steps.forEach(function (st) { if (st.line) st.line.classList.add("wait"); st.arrows.forEach(function (a) { a.g.classList.add("wait"); }); });
+        if (!calm) steps.forEach(function (st) { if (st.line) st.line.classList.add("wait"); st.arrows.forEach(function (a) { a.g.classList.add("wait"); }); });
         var i = 0;
         (function next() {
           if (gen !== linkGen || i >= steps.length) return;
           var st = steps[i++];
-          if (st.lazy) { st.arrows = st.lazy().map(make).filter(Boolean); st.arrows.forEach(function (a) { a.g.classList.add("wait"); }); }
+          if (st.lazy) { st.arrows = st.lazy().map(make).filter(Boolean); if (!calm) st.arrows.forEach(function (a) { a.g.classList.add("wait"); }); }
           if (st.line) st.line.classList.remove("wait");
-          var go = function () { if (st.run && gen === linkGen) st.run(true); next(); };
+          var go = function () { if (st.run && gen === linkGen && !echo) st.run(true); next(); };
           if (st.arrows.some(function (a) { return a.traces.length && !a.miss; })) Promise.all(st.arrows.map(trace)).then(go);
           else { st.arrows.forEach(function (a) { a.g.classList.remove("wait"); }); setTimeout(go, (st.gap != null ? st.gap : i === 1 ? 0 : 60) * SLOWX); }
         })();
