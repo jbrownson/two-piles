@@ -394,9 +394,13 @@ h2 .claim { font-weight: 300; color: var(--ink); }
 .u.bad { border-color: var(--bad); background: var(--q-bad), var(--panel); color: var(--bad); }
 .u.bad dt, .u.bad dd { color: var(--bad); }
 .u.empty { height: auto; padding: 8px 10px; border-style: dashed; background: none; box-shadow: none; }
-.u dd.ticks { gap: 2px; }
-.tick { width: 3px; height: 11px; background: var(--ui); }
-.u.flash .tick { background: var(--panel); }
+/* Retained mode: one cell for each row's text box, holding that box's own caret. The focused box's cell is filled in. */
+.u[data-k="boxes"] { grid-column: 1 / -1; display: block; height: auto; padding: 7px 10px 8px; }   /* its name above, the cells in a row below: the same height however many boxes there are */
+.u[data-k="boxes"] dt { margin-bottom: 5px; }
+.u[data-k="boxes"] dd { overflow: visible; min-height: 18px; }
+.u dd.ticks { flex-wrap: wrap; gap: 3px; }
+.tick { box-sizing: border-box; min-width: 21px; height: 18px; padding: 0 3px; border: 1px solid var(--ui); background: var(--panel); color: var(--ui-ink); font-family: var(--font-mono); font-size: 10px; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }
+.tick.on { background: var(--ui); color: var(--panel); }
 .u-in { border-bottom: 1px dashed currentColor; }
 .u-note { margin: 9px 0 0; font-size: 12.5px; font-weight: 500; line-height: 1.35; }
 /* What ran, or what reached the screen: one line each, in the pattern of the pile it touches */

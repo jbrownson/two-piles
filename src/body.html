@@ -3,7 +3,7 @@
     <header class="title"><div class="title-row"><a class="mark mark-top" href="#era-deui" aria-label="deui, the proposal this page ends with"><span class="mk mk-app"></span><span class="mk mk-ui"></span><span class="mk mk-scr"></span><svg viewBox="0 0 96 83" aria-hidden="true"><path d="M34 30.503 L62 79 M48 54.751 L34 79"/><path d="M48 6.254 L90 79 L6 79Z"/></svg></a><h1>Two Piles of State</h1></div><p class="lede">Every UI has two kinds of state. Most keep them in two piles.</p></header>
     <div class="fig" data-fig="piles"></div>
     <div class="todo" role="note"><p class="todo-h">To write · opening</p><ul>
-      <li>What the figure shows: the state that isn’t app data, such as focus, caret, selection, scroll and the list of views.</li>
+      <li>What the figure shows: the state that isn’t app data, such as focus, caret, selection and scroll.</li>
       <li>Each pile can change without the other, and the two don’t live equally long: quit and relaunch, and app state comes back from disk while the UI state starts over.</li>
       <li>The problem, in a few sentences: the screen has to follow both piles. Every change to either one must reach it, and a change to app state often has to take UI state along. Delete a row, and the caret should stay with the text it was in.</li>
       <li>Why it’s worth stating: new UI frameworks keep arriving, which suggests the problem is still open. It is also seldom spelled out, the UI-state half least of all.</li>

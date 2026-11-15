@@ -115,16 +115,24 @@
     }
 
     /* The readout: UI state, read back from the widgets that keep it */
-    function setViews(n) {
-      if (F.last.views === n) return;
-      F.last.views = n;
-      var dd = F.u.views.querySelector("dd");
+    /* Retained mode keeps a widget for every row, and each text box holds a caret of its own whether or not it has the
+       focus. So there is one cell for each box, showing the caret (or the selection) it is holding, with the focused box's
+       cell filled in. This is what "kept in the widgets" comes to: as many places for state as there are rows. */
+    function setBoxes() {
+      var fl = focusedLi(), dd = F.u.boxes.querySelector("dd");
+      var cells = Array.prototype.map.call(list.querySelectorAll("li:not(.empty)"), function (li) {
+        var a = li._inp.selectionStart, z = li._inp.selectionEnd;
+        return { on: li === fl && (!!ghost || document.activeElement === li._inp), text: a === z ? String(z) : a + "–" + z };
+      });
+      var sig = cells.map(function (c) { return (c.on ? "*" : "") + c.text; }).join(",");
+      if (F.last.boxes === sig) return;
+      var count = F.last.boxCount !== cells.length;
+      F.last.boxes = sig; F.last.boxCount = cells.length;
       dd.textContent = ""; dd.className = "ticks";
-      for (var i = 0; i < Math.min(n, 12); i++) h("span", "tick", null, dd);
-      if (n > 12) dd.appendChild(document.createTextNode("+" + (n - 12)));
-      if (n === 0) dd.textContent = "none";
-      dd.setAttribute("aria-label", n + " row views");
-      F.flash(F.u.views); F.route(null, F.u.views, "ui");
+      cells.forEach(function (c) { h("span", "tick" + (c.on ? " on" : ""), c.text, dd); });
+      if (!cells.length) dd.textContent = "none";
+      dd.setAttribute("aria-label", cells.length + " text boxes, each holding its own caret");
+      if (count) F.flash(F.u.boxes);
     }
     /* What the widgets did by themselves, with no handler involved. That is this approach's answer to
        "where does UI state live?", so the handler panel says so each time it happens. */
@@ -141,7 +149,7 @@
         } else f = a === li._cb ? "a checkbox" : "a delete button";
       } else li = null;
       var sc = Math.round(list.scrollTop) + " px";
-      if (F.u.views) setViews(list.querySelectorAll("li:not(.empty)").length);
+      if (F.u.boxes) setBoxes();
       F.setU("focus", f, li ? li._it : null, li);
       F.setU("caret", c, c, li);
       F.setU("selection", s, s, li);
@@ -270,7 +278,7 @@
   /* The top figure: the app, and both piles */
   LiveFig("piles", {
     cls: "full", label: "To-do list", noAuto: coarse,
-    fields: [["views", "views"], ["focus", "focus", "nothing"], ["caret", "caret", "—"], ["selection", "selection", "none"], ["scroll", "scroll", "0 px"], ["hover", "pointer over", "nothing"]],
+    fields: [["focus", "focus", "nothing"], ["caret", "caret", "—"], ["selection", "selection", "none"], ["scroll", "scroll", "0 px"], ["hover", "pointer over", "nothing"]],
     foot: "Enter adds a row · Backspace on an empty row removes it",
     turn: "The app is live: click a row, type, select a word, scroll, tick something off, add a row with Enter. The close box quits it, and the icon starts it again. Drag the slider to go back to the example.",
     machine: function (F) { return DomMachine(F, { items: EIGHT, full: true }); },
@@ -297,7 +305,7 @@
   LiveFig("hand", {
     label: "To-do list, retained mode", where: "kept in the widgets", noAuto: coarse, keeps: "toolkit", mach: "what ran", log: true,
     link: { text: "build()", sub: "ran once, at launch", from: function (F) { return F.cards; } },
-    fields: [["focus", "focus", "nothing"], ["caret", "caret", "—"], ["selection", "selection", "none"], ["scroll", "scroll", "0 px"]],
+    fields: [["focus", "focus", "nothing"], ["caret", "caret", "—"], ["selection", "selection", "none"], ["scroll", "scroll", "0 px"], ["boxes", "each box’s caret", ""]],
     toggles: [{ name: "slip", off: "Leave a line out", on: "Put the line back" }],
     machine: function (F) { return DomMachine(F, { items: EIGHT, code: true }); },
     script: function (F) {
