@@ -115,23 +115,18 @@
     }
 
     /* The readout: UI state, read back from the widgets that keep it */
-    /* Retained mode keeps a widget for every row, and each text box holds a caret of its own whether or not it has the
-       focus. So there is one cell for each box, showing the caret (or the selection) it is holding, with the focused box's
-       cell filled in. This is what "kept in the widgets" comes to: as many places for state as there are rows. */
+    /* Retained mode keeps a widget for every row: an object that lives as long as its row does, with the row's UI state
+       inside it. One square for each, and the one with the focus filled in. */
     function setBoxes() {
-      var fl = focusedLi(), dd = F.u.boxes.querySelector("dd");
-      var cells = Array.prototype.map.call(list.querySelectorAll("li:not(.empty)"), function (li) {
-        var a = li._inp.selectionStart, z = li._inp.selectionEnd;
-        return { on: li === fl && (!!ghost || document.activeElement === li._inp), text: a === z ? String(z) : a + "–" + z };
-      });
-      var sig = cells.map(function (c) { return (c.on ? "*" : "") + c.text; }).join(",");
+      var fl = focusedLi(), dd = F.u.boxes.querySelector("dd"), rows = list.querySelectorAll("li:not(.empty)");
+      var sig = Array.prototype.map.call(rows, function (li) { return li === fl ? "*" : "."; }).join("");
       if (F.last.boxes === sig) return;
-      var count = F.last.boxCount !== cells.length;
-      F.last.boxes = sig; F.last.boxCount = cells.length;
+      var count = F.last.boxes == null || F.last.boxes.length !== sig.length;
+      F.last.boxes = sig;
       dd.textContent = ""; dd.className = "ticks";
-      cells.forEach(function (c) { h("span", "tick" + (c.on ? " on" : ""), c.text, dd); });
-      if (!cells.length) dd.textContent = "none";
-      dd.setAttribute("aria-label", cells.length + " text boxes, each holding its own caret");
+      each(rows, function (li) { h("span", "tick" + (li === fl ? " on" : ""), null, dd); });
+      if (!rows.length) dd.textContent = "none";
+      dd.setAttribute("aria-label", rows.length + " row widgets");
       if (count) F.flash(F.u.boxes);
     }
     /* What the widgets did by themselves, with no handler involved. That is this approach's answer to
@@ -305,7 +300,7 @@
   LiveFig("hand", {
     label: "To-do list, retained mode", where: "kept in the widgets", noAuto: coarse, keeps: "toolkit", mach: "what ran", log: true,
     link: { text: "build()", sub: "ran once, at launch", from: function (F) { return F.cards; } },
-    fields: [["focus", "focus", "nothing"], ["caret", "caret", "—"], ["selection", "selection", "none"], ["scroll", "scroll", "0 px"], ["boxes", "each box’s caret", ""]],
+    fields: [["focus", "focus", "nothing"], ["caret", "caret", "—"], ["selection", "selection", "none"], ["scroll", "scroll", "0 px"], ["boxes", "row widgets", ""]],
     toggles: [{ name: "slip", off: "Leave a line out", on: "Put the line back" }],
     machine: function (F) { return DomMachine(F, { items: EIGHT, code: true }); },
     script: function (F) {
