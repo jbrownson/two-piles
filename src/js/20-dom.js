@@ -116,18 +116,16 @@
 
     /* The readout: UI state, read back from the widgets that keep it */
     /* Retained mode keeps a widget for every row: an object that lives as long as its row does, with the row's UI state
-       inside it. One square for each, and the one with the focus filled in. */
+       inside it. One square for each. Which of them has the focus is what the focus slip says. */
     function setBoxes() {
-      var fl = focusedLi(), dd = F.u.boxes.querySelector("dd"), rows = list.querySelectorAll("li:not(.empty)");
-      var sig = Array.prototype.map.call(rows, function (li) { return li === fl ? "*" : "."; }).join("");
-      if (F.last.boxes === sig) return;
-      var count = F.last.boxes == null || F.last.boxes.length !== sig.length;
-      F.last.boxes = sig;
+      var n = list.querySelectorAll("li:not(.empty)").length, dd = F.u.boxes.querySelector("dd");
+      if (F.last.boxes === n) return;
+      F.last.boxes = n;
       dd.textContent = ""; dd.className = "ticks";
-      each(rows, function (li) { h("span", "tick" + (li === fl ? " on" : ""), null, dd); });
-      if (!rows.length) dd.textContent = "none";
-      dd.setAttribute("aria-label", rows.length + " row widgets");
-      if (count) F.flash(F.u.boxes);
+      for (var i = 0; i < n; i++) h("span", "tick", null, dd);
+      if (!n) dd.textContent = "none";
+      dd.setAttribute("aria-label", n + " row widgets");
+      F.flash(F.u.boxes);
     }
     /* What the widgets did by themselves, with no handler involved. That is this approach's answer to
        "where does UI state live?", so the handler panel says so each time it happens. */

@@ -394,11 +394,10 @@ h2 .claim { font-weight: 300; color: var(--ink); }
 .u.bad { border-color: var(--bad); background: var(--q-bad), var(--panel); color: var(--bad); }
 .u.bad dt, .u.bad dd { color: var(--bad); }
 .u.empty { height: auto; padding: 8px 10px; border-style: dashed; background: none; box-shadow: none; }
-/* Retained mode: one square for each row's widget, the focused one filled in */
+/* Retained mode: one square for each row's widget */
 .u[data-k="boxes"] { grid-column: 1 / -1; }
 .u dd.ticks { gap: 4px; overflow: visible; }
 .tick { box-sizing: border-box; width: 10px; height: 10px; border: 1px solid var(--ui); background: var(--panel); }
-.tick.on { background: var(--ui); }
 .u-in { border-bottom: 1px dashed currentColor; }
 .u-note { margin: 9px 0 0; font-size: 12.5px; font-weight: 500; line-height: 1.35; }
 /* What ran, or what reached the screen: one line each, in the pattern of the pile it touches */
