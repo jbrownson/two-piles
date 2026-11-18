@@ -380,7 +380,7 @@
       function crossArrow(ghost) { return { from: F.mach, to: F.mach2, fromY: F.crossLabel, toY: F.crossLabel, dy: cfg.cross.dy || 22, c: "scr", ghost: ghost }; }   /* level, beside its name */
       function colour(kind) { return kind === "data" ? "data" : kind === "view" ? "scr" : kind === "ui" ? "ui" : kind === "missing" ? "bad" : "ink"; }
       if (spec) {
-        if (spec.ev != null) steps.push({ key: "S", line: F.sum, arrows: [make({ from: win, to: F.sum, fromY: function () { return yOf(spec.ev, null) - 7; }, side: "l", c: "ink" })] });
+        if (spec.ev != null && !(cfg.square && !stacked())) steps.push({ key: "S", line: F.sum, arrows: [make({ from: win, to: F.sum, fromY: function () { return yOf(spec.ev, null) - 7; }, side: "l", c: "ink" })] });
         else steps.push({ key: "S", line: F.sum, arrows: [] });
         var crossed = !F.sum2, crossing = function () {   /* from the first panel to the second: its summary shows, and the link between them runs if this run fired it */
           if (crossed) return; crossed = true;

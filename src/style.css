@@ -694,6 +694,11 @@ h2 .claim { font-weight: 300; color: var(--ink); }
   .demo.fig-puri > .app { grid-column: 4; grid-row: 1 / span 2; border-left: 1px solid var(--ink); }
   .demo.fig-deui > .app { grid-column: 4; grid-row: 1; border-left: 1px solid var(--ink); padding-bottom: 22px; }
   .demo.fig-deui > .scr-pile { grid-column: 4; grid-row: 2; padding: 16px 24px 26px; border-left: 1px solid var(--ink); border-top: 1px solid var(--ink); }
+  /* deui is a diagram of two rows. Along the top: the state, the view, the screen. Under each, its counterpart: the
+     state's change, the view's derivative, the screen's change. So the state keeps to the top row, and its change has the whole width under it. */
+  .demo.fig-deui > .data-pile { grid-row: 1; }
+  .demo.fig-deui > .code-pile { grid-column: 1 / span 2; border-left: 0; }
+  .demo.fig-deui .ml-t { color: var(--ink); font-weight: 600; }
 }
 /* Stacked, on a phone or a narrow window: the screen first, then what stands between, then what ran, then what you keep */
 @media (max-width: 1000px) {

@@ -748,10 +748,10 @@
         var first = F.mach.firstElementChild, src = first ? F.box(first) : null, cards = F.box(F.cards), slips = F.box(F.ustate);
         if (!src) return [];
         if (F.stacked()) return lands.map(function (t) { return { from: first, to: t.el || t.to, toY: t.toY, c: "data" }; });
-        var gx = Math.round(slips.l - 11), y0 = Math.round(src.t + src.h / 2);   /* one trunk, up the gutter between the cards and the slips */
+        var gx = Math.round(slips.l - 11);   /* one trunk, straight up out of the change and into the state above it, by the gutter between the cards and the slips */
         return lands.map(function (t) {
           var e = t.el ? (typeof t.el === "function" ? t.el() : t.el) : null, b = e ? F.box(e) : null, y = b ? b.t + b.h / 2 : t.toY(), left = b ? b.l < gx : true;
-          return y == null ? null : { c: "data", hit: e, pts: [[src.l - 2, y0], [gx, y0], [gx, y], [left ? (b ? b.r : cards.r) + 3 : b.l - 3, y]] };
+          return y == null ? null : { c: "data", hit: e, pts: [[gx, src.t - 2], [gx, y], [left ? (b ? b.r : cards.r) + 3 : b.l - 3, y]] };
         }).filter(Boolean);
       };
       /* The second, across the derivative: the edits to the screen, then whether they add up to a rerun. */
@@ -834,7 +834,7 @@
   }
 
   LiveFig("deui", {
-    kit: true, label: "To-do list, deui", where: "", keeps: "yours", mach: "the state’s change", two: "the screen’s change",
+    kit: true, label: "To-do list, deui", where: "", keeps: "yours", mach: "the state’s change", two: "the screen’s change", square: true,
     /* Two ways to the screen. The function, view, takes the state and gives the whole screen: it runs at launch and never again.
        Its derivative takes the state as it was and its change, and gives the screen's change: it runs on every change. */
     link: { text: "view(state)", sub: "the function · at launch only", from: function (F) { return [F.cards, F.ustate]; } },
