@@ -103,6 +103,7 @@
       <li>An objection worth quoting: “immediate mode libraries that shunt all state management onto the application are out of the question.” A reply: you pick a store, and it can be the same keyed table. The widgets just don’t pick for you.</li>
       <li>Another: web developers have tried “everything in the store”, and many moved away from it. What’s different here: this goes down to the caret, and plumbing is cheap to write now. Check that history before publishing.</li>
       <li>It merges the piles: there is one state, drawn in one colour. What the approaches above call UI state is here just the part you strip out when you save and build back when you load.</li>
+      <li>Not in the figure, so for the prose: state that belongs to each row (open or closed, a remembered caret) can sit on the item itself, beside its text, and is stripped on save like the rest. This to-do list has no such state, and the figure’s “Focus on the item” setting is the nearest it comes.</li>
       <li>Saving in the figure is one line, <code>disk.save(strip(s))</code>, and a relaunch starts the focus and caret over, as in every figure above. Keeping the caret across launches would be a small change to <code>strip</code>, which the approaches above can’t offer.</li>
       <li>Also possible: finer control over how UI elements change state, such as how multiple clicks behave. The roc-puri to-do example works this out in detail.</li>
     </ul></div>
