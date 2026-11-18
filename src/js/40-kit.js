@@ -734,20 +734,40 @@
       scr.forEach(function (e) { e[1](); });
       uis.forEach(function (e) { e[1](); });
       K.setFocus(ui.focus == null ? -1 : ui.focus, ui.caret, null, sel());
-      /* What ran, with its arrows: the change is applied to app state, each edit the derivative made goes to
-         the window at the row it touched, and each change to UI state goes to its slip. */
-      var data = !/^(focus|caret|select|scroll)$/.test(ch.type), bad = check(ch.type === "scroll");
-      /* The first panel: the change, and what it does to the two piles you keep. */
-      var lines = [[label(ch), "data", data ? "state" : "", data ? "pile" : "", data ? (at != null ? { near: 1, to: function () { return F.cards.children[at]; } } : ch.type === "del" ? Object.assign({ near: 1 }, F.gapAt(r)) : { to: F.dataHead }) : null]];
-      uis.forEach(function (e) { lines.push([e[0], "data", "state", "pile", { to: F.u[/^focus/.test(e[0]) ? "focus" : /^caret/.test(e[0]) ? "caret" : /^selection/.test(e[0]) ? "selection" : "scroll"] }]); });
-      /* The second, across the derivative: the edits to the screen, and whether they add up to a rerun. */
+      /* What ran. The figure is a square. Along the top are the two things there are, the state and the screen, joined by
+         the view. Along the bottom are their two changes, joined by the view's derivative. Each change is applied to the
+         thing above it, and that is one arrow a side, with a branch for each place it lands. */
+      var data = !/^(focus|caret|select|scroll)$/.test(ch.type), bad = check(ch.type === "scroll"), slipOf = function (t) { return F.u[/^focus/.test(t) ? "focus" : /^caret/.test(t) ? "caret" : /^selection/.test(t) ? "selection" : "scroll"]; };
+      /* The first panel: the change to the state, an edit a line. */
+      var lines = [[label(ch), "data", data ? "state" : "", data ? "pile" : ""]], n1;
+      uis.forEach(function (e) { lines.push([e[0], "data", "state", "pile"]); });
+      n1 = lines.length;
+      /* Where its edits land: an item's card (or the gap a deleted one left), and a slip for each of the others */
+      var lands = (data ? [at != null ? { el: function () { return F.cards.children[at]; } } : ch.type === "del" ? F.gapAt(r) : { el: F.dataHead }] : []).concat(uis.map(function (e) { return { el: slipOf(e[0]) }; }));
+      var toState = function () {
+        var first = F.mach.firstElementChild, src = first ? F.box(first) : null, cards = F.box(F.cards), slips = F.box(F.ustate);
+        if (!src) return [];
+        if (F.stacked()) return lands.map(function (t) { return { from: first, to: t.el || t.to, toY: t.toY, c: "data" }; });
+        var gx = Math.round(slips.l - 11), y0 = Math.round(src.t + src.h / 2);   /* one trunk, up the gutter between the cards and the slips */
+        return lands.map(function (t) {
+          var e = t.el ? (typeof t.el === "function" ? t.el() : t.el) : null, b = e ? F.box(e) : null, y = b ? b.t + b.h / 2 : t.toY(), left = b ? b.l < gx : true;
+          return y == null ? null : { c: "data", hit: e, pts: [[src.l - 2, y0], [gx, y0], [gx, y], [left ? (b ? b.r : cards.r) + 3 : b.l - 3, y]] };
+        }).filter(Boolean);
+      };
+      /* The second, across the derivative: the edits to the screen, then whether they add up to a rerun. */
       if (fixed) lines.push(["the screen was wrong, so it was redrawn first", "soft", "", "", null, 2]);
-      scr.forEach(function (e) { lines.push([e[0], "view", "", "", { to: F.win, toY: e[2], side: "r", dy: e[3] }, 2]); });
+      var e0 = lines.length;
+      scr.forEach(function (e) { lines.push([e[0], "view", "", "", null, 2]); });
       if (broken && ch.type === "del") lines.push(["remove row " + (r + 1), "missing", "left out", "pile", { to: F.win, toY: gone, miss: 1, side: "r" }, 2]);
+      var toScreen = function () {
+        var first = F.mach2.children[e0 - n1];
+        return first && scr.length ? [{ from: first, to: F.win, comb: scr.map(function (e) { return e[3] ? function () { return (typeof e[2] === "function" ? F.box(e[2]()).t : e[2]) + e[3]; } : e[2]; }), clip: F.host, c: "scr", side: "r" }] : [];
+      };
+      var c0 = lines.length;
       lines.push(bad ? ["✗ " + bad, "bad", "", "", null, 2] : ["✓ same as rerunning the view", "good", "", "", null, 2]);
       wrong = !!bad;
       if (bad) F.setNote("bad", "The screen is wrong now. With a proof checker, this derivative would be rejected before it ever ran.");
-      F.lines("on " + (ch.type === "scroll" ? "scroll" : ch.type === "select" ? "select" : by) + ": one change", lines, { ev: ev, cross: true, sum2: count(scr.length, "edit") + " · reran 0 rows" });
+      F.lines("on " + (ch.type === "scroll" ? "scroll" : ch.type === "select" ? "select" : by) + ": one change", lines, { ev: ev, cross: true, sum2: count(scr.length, "edit") + " · reran 0 rows", more: [{ at: n1, now: 1, arrows: toState }, { at: c0, now: 1, arrows: toScreen }] });
       panel();
       if (data) F.cardsFor(items, at, at != null ? K.row(at) : null);
     }
@@ -814,11 +834,11 @@
   }
 
   LiveFig("deui", {
-    kit: true, label: "To-do list, deui", where: "", keeps: "yours", mach: "the change", two: "the screen’s change",
+    kit: true, label: "To-do list, deui", where: "", keeps: "yours", mach: "the state’s change", two: "the screen’s change",
     /* Two ways to the screen. The function, view, takes the state and gives the whole screen: it runs at launch and never again.
-       Its derivative takes the state as it was and the change, and gives the screen's change: it runs on every change. */
+       Its derivative takes the state as it was and its change, and gives the screen's change: it runs on every change. */
     link: { text: "view(state)", sub: "the function · at launch only", from: function (F) { return [F.cards, F.ustate]; } },
-    cross: { text: "dview(state, change)", sub: "its derivative · every change", dy: -22, feed: true },
+    cross: { text: "dview(state, change)", sub: "its derivative · every change", dy: -22 },
     fields: [["focus", "focus", "nothing"], ["caret", "caret", "—"], ["selection", "selection", "none"], ["scroll", "scroll", "0 px"]],
     /* The policy is for a step the shared script doesn't have, deleting the row you're in, so its switch doesn't replay anything */
     switches: [{ name: "policy", quiet: true, label: "If your own row is deleted", show: "If your row is deleted:", options: [["next", "Next row"], ["prev", "Previous row"], ["none", "No focus"]] }],

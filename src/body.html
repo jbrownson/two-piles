@@ -123,7 +123,7 @@
       <li>Answers the second question directly: the change is kept, not recovered.</li>
       <li>The name: deui, said “dewey”. It’s dUI, the change in the UI. It also reads as de-UI, taking something away, and that isn’t wrong.</li>
       <li>The change is a value. A derivative turns the state’s change into the screen’s change.</li>
-      <li>Two paths to the screen, drawn apart in the figure. The view function takes the state and gives the whole screen, and it runs once, at launch. Its derivative takes the state as it was and the change, and gives the screen’s change. After launch only the derivative runs.</li>
+      <li>The figure is a square. Along the top are the two things there are, the state and the screen, joined by the view function, which runs once, at launch. Along the bottom are their two changes, joined by the view’s derivative, which takes the state as it was and its change and runs on every change. Each change is applied to the thing above it.</li>
       <li>Identity again: here state can be kept by position and still follow its item, because the change says how the positions moved. In the figure the focus goes from row 3 to row 2. No key is needed, since nothing has to be matched up afterwards.</li>
       <li>Precedent: the best text editors already work this way. CodeMirror 6 and ProseMirror carry every edit as a change and map the selection through it. They do it by hand, for one widget.</li>
       <li>In retained mode a missing line went unseen. Here a derivative with a missing edit breaks the law, and a check catches it.</li>
