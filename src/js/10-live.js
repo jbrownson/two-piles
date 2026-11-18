@@ -378,13 +378,20 @@
         return out;
       }
       function crossArrow(ghost) { return { from: F.mach, to: F.mach2, fromY: F.crossLabel, toY: F.crossLabel, dy: cfg.cross.dy || 22, c: "scr", ghost: ghost }; }   /* level, beside its name */
+      /* What else the derivative reads (`cfg.cross.feed`): the state as it stood before the change. Out of the state's edge, down the channel, into the link. */
+      function crossFeed(ghost) {
+        return { c: "scr", ghost: ghost, pts: function () {
+          var p = F.box(F.ustate.closest(".pile")), lb = F.box(F.crossLabel), x = Math.round(lb.l + lb.w / 2), y = Math.round(lb.t + lb.h / 2 + (cfg.cross.dy || 22));
+          return [[p.r + 2, p.b - 30], [x, p.b - 30], [x, y - 5]];
+        } };
+      }
       function colour(kind) { return kind === "data" ? "data" : kind === "view" ? "scr" : kind === "ui" ? "ui" : kind === "missing" ? "bad" : "ink"; }
       if (spec) {
         if (spec.ev != null) steps.push({ key: "S", line: F.sum, arrows: [make({ from: win, to: F.sum, fromY: function () { return yOf(spec.ev, null) - 7; }, side: "l", c: "ink" })] });
         else steps.push({ key: "S", line: F.sum, arrows: [] });
         var crossed = !F.sum2, crossing = function () {   /* from the first panel to the second: its summary shows, and the link between them runs if this run fired it */
           if (crossed) return; crossed = true;
-          steps.push({ key: "X", line: F.sum2, arrows: cfg.cross && spec.cross ? [make(stacked() ? { from: F.mach, to: F.sum2, c: "scr", side: "l" } : crossArrow(false))] : [] });
+          steps.push({ key: "X", line: F.sum2, arrows: cfg.cross && spec.cross ? (stacked() ? [{ from: F.mach, to: F.sum2, c: "scr", side: "l" }] : [crossArrow(false)].concat(cfg.cross.feed ? [crossFeed(false)] : [])).map(make) : [] });
         };
         /* Arrows given as a function are worked out when their step is reached, not before: by then whatever was still moving when the run began has come to rest */
         var mores = spec.more.slice(), moreStep = function (m) { var key = "M" + spec.more.indexOf(m), fn = typeof m.arrows === "function" ? m.arrows : null, later = fn && !has(key + "!"); steps.push({ key: key, line: null, arrows: later ? [] : (fn ? fn() : m.arrows || []).map(make), lazy: later ? fn : null, run: m.run, gap: m.gap }); };
@@ -401,7 +408,7 @@
       if (cfg.cross) {   /* the link between the panels: dormant unless this run fired it */
         var xon = !!(spec && spec.cross);
         F.crossLabel.classList.toggle("on", xon);
-        if (!xon && !stacked()) make(crossArrow(true));
+        if (!xon && !stacked()) { make(crossArrow(true)); if (cfg.cross.feed) make(crossFeed(true)); }
       }
       /* The standing link across the middle: dormant (a dashed outline) until a run fires it. On a phone it goes by way of its label. */
       if (cfg.link) {

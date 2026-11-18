@@ -682,6 +682,7 @@ h2 .claim { font-weight: 300; color: var(--ink); }
   .demo.fig-imm .code-pile .mach { min-height: 124px; }
   /* Puri and deui: your state is two piles wide, then a channel, then the screen */
   .demo.fig-puri, .demo.fig-deui { grid-template-columns: minmax(0, .84fr) minmax(0, 1.16fr) 130px minmax(0, 1.15fr); }
+  .demo.fig-deui { grid-template-columns: minmax(0, .84fr) minmax(0, 1.12fr) 152px minmax(0, 1.15fr); }   /* its channel holds the derivative's name, with both of the things it takes */
   /* Everything you keep is one region: the two piles, side by side with no line between them. Your code is boxed off in its corner. */
   .demo.fig-puri > .data-pile, .demo.fig-deui > .data-pile { padding-right: 20px; }
   .demo.fig-puri > .ui-pile, .demo.fig-deui > .ui-pile { grid-column: 2; grid-row: 1; padding: 22px 24px 18px 24px; border-right: 1px solid var(--ink); }

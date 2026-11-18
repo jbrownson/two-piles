@@ -815,8 +815,10 @@
 
   LiveFig("deui", {
     kit: true, label: "To-do list, deui", where: "", keeps: "yours", mach: "the change", two: "the screen’s change",
-    link: { text: "view(state)", sub: "ran once, at launch", from: function (F) { return [F.cards, F.ustate]; } },
-    cross: { text: "derivative", sub: "on every change", dy: -22 },
+    /* Two ways to the screen. The function, view, takes the state and gives the whole screen: it runs at launch and never again.
+       Its derivative takes the state as it was and the change, and gives the screen's change: it runs on every change. */
+    link: { text: "view(state)", sub: "the function · at launch only", from: function (F) { return [F.cards, F.ustate]; } },
+    cross: { text: "dview(state, change)", sub: "its derivative · every change", dy: -22, feed: true },
     fields: [["focus", "focus", "nothing"], ["caret", "caret", "—"], ["selection", "selection", "none"], ["scroll", "scroll", "0 px"]],
     /* The policy is for a step the shared script doesn't have, deleting the row you're in, so its switch doesn't replay anything */
     switches: [{ name: "policy", quiet: true, label: "If your own row is deleted", show: "If your row is deleted:", options: [["next", "Next row"], ["prev", "Previous row"], ["none", "No focus"]] }],
@@ -827,8 +829,8 @@
       return story(F, {
         cap: function (k) {
           return {
-            "1": "Click into “Fix scroll bug”. A click is a change to the state, and it’s applied directly.",
-            "2": "Type “today” at the end. Each key is one small change. The derivative turns it into one edit to the screen and one to the caret.",
+            "1": "Click into “Fix scroll bug”. A click is a change to the state, and it’s applied directly. The view function isn’t run: it ran at launch, and from here on only its derivative does.",
+            "2": "Type “today” at the end. Each key is one small change. The derivative takes the state as it was and the change, and gives one edit to the screen.",
             "3": "Select a word. Another change to the state, applied directly. Nothing is rerun.",
             "4a": "Delete “Call Phil”, the row above yours.",
             "4": F.m.broken()
@@ -837,7 +839,7 @@
             "5": "Scroll. One more change, and the derivative turns it into one edit to the screen: shift the list.",
             "6a": "Quit the app with its close box.",
             "6q": "Quit the app with its close box. One line saves the state, with the parts that shouldn’t outlive the app stripped out first.",
-            "6": "Launch it again. The state is built back from what was saved, and the view is drawn once from it."
+            "6": "Launch it again. The state is built back from what was saved, and the view function runs on it, this once. Every change after this goes by the derivative."
           }[k];
         }
       });
