@@ -640,6 +640,21 @@
      the screen and to UI state, and nothing is rerun. The law says the result must equal a rerun.
      Here that is checked after each change, as an illustration. In a proved version it is a proof, checked before the program runs.
      --------------------------------------------------------------------------------------------- */
+  /* The plain diagram above the figure lights up along with it: the top row when the view runs, the bottom row and
+     the two ways up when a change goes through. One pass at a time, so a burst of keys is one steady pass after another. */
+  var ideaBusy = false;
+  function ideaRun(kind) {
+    var box = document.querySelector(".stage.sq");
+    if (!box || reduce || ideaBusy) return;
+    var seq = kind === "launch" ? [["state"], ["view"], ["screen"]] : [["dstate"], ["upl", "state"], ["dview"], ["dscreen"], ["upr", "screen"]];
+    ideaBusy = true;
+    seq.forEach(function (names, i) {
+      var parts = [];
+      names.forEach(function (n) { each(box.querySelectorAll('[data-p="' + n + '"]'), function (e) { parts.push(e); }); });
+      setTimeout(function () { parts.forEach(function (e) { e.classList.add("lit"); }); }, i * 170);
+      setTimeout(function () { parts.forEach(function (e) { e.classList.remove("lit"); }); if (i === seq.length - 1) ideaBusy = false; }, i * 170 + 380);
+    });
+  }
   function DeuiMachine(F) {
     var K = Kit(F), M = { pt: K.pt }, items = [], nextId = 9, ui = { focus: null, caret: 0, anchor: 0, scroll: 0 }, policy = "next", broken = false, wrong = false, closed = false;
     oneState(F);
@@ -768,6 +783,7 @@
       wrong = !!bad;
       if (bad) F.setNote("bad", "The screen is wrong now. With a proof checker, this derivative would be rejected before it ever ran.");
       F.lines("on " + (ch.type === "scroll" ? "scroll" : ch.type === "select" ? "select" : by) + ": one change", lines, { ev: ev, cross: true, sum2: count(scr.length, "edit") + " · reran 0 rows", more: [{ at: n1, now: 1, arrows: toState }, { at: c0, now: 1, arrows: toScreen }] });
+      if (!F.quiet) ideaRun("change");
       panel();
       if (data) F.cardsFor(items, at, at != null ? K.row(at) : null);
     }
@@ -819,6 +835,7 @@
       items = copyItems(disk.data.items); nextId = topId(items); ui = { focus: null, caret: 0, anchor: 0, scroll: 0 }; closed = false;
       K.draw({ rows: spec(), scroll: 0 }); K.setHot(-1); K.setFocus(-1, 0, null, sel());
       F.lines("on launch:", [["s = restore(disk.load())", "data", "state", "pile", { to: F.dataHead }]], { fire: true, sum2: "none: the whole view ran, this once" });
+      if (!F.quiet) ideaRun("launch");
       F.last = {}; panel(); F.cardsFor(items);
       F.setNote("", "strip() left the focus, caret, selection and scroll out, so they start over.");
     };

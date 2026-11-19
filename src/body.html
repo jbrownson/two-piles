@@ -130,65 +130,49 @@
       <li>When a change and your focus collide, a policy you chose decides. No magic. The script doesn’t show this. The reader can, by deleting the row they’re in.</li>
       <li>Credit Phil Freeman’s PureScript Purview (2017–18), and the story of where the idea came from.</li>
     </ul></div>
-    <div class="stage sq"><svg class="sq-wide" viewBox="0 0 960 322" role="img" aria-label="Two rows. On top, the state goes through the view function to give the screen. Underneath, the state’s change goes through the view’s derivative to give the screen’s change. Each change is applied to the thing above it.">
-      <rect class="bx data" x="60" y="36" width="250" height="112"/>
-      <text class="lab data" x="78" y="62">State</text>
-      <text class="eg" x="78" y="96">8 items</text>
-      <text class="eg" x="78" y="118">focus · caret · scroll</text>
-      <rect class="bx scr" x="650" y="36" width="250" height="112"/>
-      <text class="lab scr" x="668" y="62">Screen</text>
-      <text class="eg" x="668" y="96">8 rows, drawn</text>
-      <text class="eg" x="668" y="118">a caret in row 3</text>
-      <text class="fn" x="480" y="72" text-anchor="middle">view(state)</text>
-      <path class="ar wide" d="M320 92 H 628"/><path class="hd" d="M642 92 L 626 83 V 101 Z"/>
-      <text class="sub" x="480" y="120" text-anchor="middle">the function · runs once, at launch</text>
-      <rect class="bx data" x="75" y="228" width="220" height="64"/>
-      <text class="lab data" x="91" y="252">The state’s change</text>
-      <text class="eg" x="91" y="276">insert “y” in row 3</text>
-      <rect class="bx scr" x="665" y="228" width="220" height="64"/>
-      <text class="lab scr" x="681" y="252">The screen’s change</text>
-      <text class="eg" x="681" y="276">row 3: insert “y”</text>
-      <text class="fn" x="480" y="240" text-anchor="middle">dview(state, change)</text>
-      <path class="ar" d="M305 260 H 646"/><path class="hd" d="M656 260 L 645 254.5 V 265.5 Z"/>
-      <text class="sub" x="480" y="286" text-anchor="middle">its derivative · runs on every change</text>
-      <path class="ar data" d="M185 222 V 164"/><path class="hd data" d="M185 154 L 179.5 165 H 190.5 Z"/>
-      <text class="sub" x="197" y="194">applied to</text>
-      <path class="ar" d="M775 222 V 164"/><path class="hd" d="M775 154 L 769.5 165 H 780.5 Z"/>
-      <text class="sub" x="787" y="194">applied to</text>
+    <div class="stage sq"><svg class="sq-wide" viewBox="0 0 960 268" role="img" aria-label="Two rows. On top, the state goes through the view function to give the screen. Underneath, the state’s change goes through the view’s derivative to give the screen’s change. Each change is applied to the thing above it.">
+      <rect class="bx data" data-p="state" x="80" y="34" width="230" height="76"/>
+      <text class="nm data" x="195" y="78" text-anchor="middle">state</text>
+      <rect class="bx scr" data-p="screen" x="650" y="34" width="230" height="76"/>
+      <text class="nm scr" x="765" y="78" text-anchor="middle">screen</text>
+      <text class="fn" x="480" y="54" text-anchor="middle">view</text>
+      <path class="ar wide" data-p="view" d="M322 72 H 624"/><path class="hd" data-p="view" d="M640 72 L 622 62 V 82 Z"/>
+      <text class="sub" x="480" y="100" text-anchor="middle">the function</text>
+      <rect class="bx data" data-p="dstate" x="105" y="184" width="180" height="50"/>
+      <text class="nm sm data" x="195" y="214" text-anchor="middle">state’s change</text>
+      <rect class="bx scr" data-p="dscreen" x="675" y="184" width="180" height="50"/>
+      <text class="nm sm scr" x="765" y="214" text-anchor="middle">screen’s change</text>
+      <text class="fn" x="480" y="193" text-anchor="middle">dview</text>
+      <path class="ar" data-p="dview" d="M297 209 H 654"/><path class="hd" data-p="dview" d="M665 209 L 653 203 V 215 Z"/>
+      <text class="sub" x="480" y="234" text-anchor="middle">its derivative</text>
+      <path class="ar data" data-p="upl" d="M195 178 V 128"/><path class="hd data" data-p="upl" d="M195 117 L 189 129 H 201 Z"/>
+      <text class="sub" x="208" y="152">applied to</text>
+      <path class="ar" data-p="upr" d="M765 178 V 128"/><path class="hd" data-p="upr" d="M765 117 L 759 129 H 771 Z"/>
+      <text class="sub" x="778" y="152">applied to</text>
     </svg>
-    <svg class="sq-narrow" viewBox="0 0 390 392" role="img" aria-label="Two rows. On top, the state goes through the view function to give the screen. Underneath, the state’s change goes through the view’s derivative to give the screen’s change. Each change is applied to the thing above it.">
-      <rect class="bx data" x="14" y="30" width="136" height="100"/>
-      <text class="lab data" x="26" y="54">State</text>
-      <text class="eg" x="26" y="84">8 items</text>
-      <text class="eg" x="26" y="104">focus · caret</text>
-      <rect class="bx scr" x="240" y="30" width="136" height="100"/>
-      <text class="lab scr" x="252" y="54">Screen</text>
-      <text class="eg" x="252" y="84">8 rows,</text>
-      <text class="eg" x="252" y="104">drawn</text>
-      <text class="fn" x="195" y="62" text-anchor="middle">view</text>
-      <path class="ar wide" d="M158 80 H 220"/><path class="hd" d="M233 80 L 218 71.5 V 88.5 Z"/>
-      <text class="sub" x="195" y="106" text-anchor="middle">the function:</text>
-      <text class="sub" x="195" y="121" text-anchor="middle">at launch</text>
-      <rect class="bx data" x="14" y="250" width="136" height="112"/>
-      <text class="lab data" x="26" y="274">The state’s</text>
-      <text class="lab data" x="26" y="290">change</text>
-      <text class="eg" x="26" y="320">insert “y”</text>
-      <text class="eg" x="26" y="340">in row 3</text>
-      <rect class="bx scr" x="240" y="250" width="136" height="112"/>
-      <text class="lab scr" x="252" y="274">The screen’s</text>
-      <text class="lab scr" x="252" y="290">change</text>
-      <text class="eg" x="252" y="320">row 3:</text>
-      <text class="eg" x="252" y="340">insert “y”</text>
-      <text class="fn" x="195" y="288" text-anchor="middle">dview</text>
-      <path class="ar" d="M158 306 H 224"/><path class="hd" d="M233 306 L 222 300.5 V 311.5 Z"/>
-      <text class="sub" x="195" y="330" text-anchor="middle">its derivative:</text>
-      <text class="sub" x="195" y="345" text-anchor="middle">every change</text>
-      <path class="ar data" d="M82 244 V 146"/><path class="hd data" d="M82 136 L 76.5 147 H 87.5 Z"/>
-      <text class="sub" x="92" y="194">applied to</text>
-      <path class="ar" d="M308 244 V 146"/><path class="hd" d="M308 136 L 302.5 147 H 313.5 Z"/>
-      <text class="sub" x="298" y="194" text-anchor="end">applied to</text>
+    <svg class="sq-narrow" viewBox="0 0 390 300" role="img" aria-label="Two rows. On top, the state goes through the view function to give the screen. Underneath, the state’s change goes through the view’s derivative to give the screen’s change. Each change is applied to the thing above it.">
+      <rect class="bx data" data-p="state" x="14" y="26" width="130" height="70"/>
+      <text class="nm data" x="79" y="67" text-anchor="middle">state</text>
+      <rect class="bx scr" data-p="screen" x="246" y="26" width="130" height="70"/>
+      <text class="nm scr" x="311" y="67" text-anchor="middle">screen</text>
+      <text class="fn" x="195" y="46" text-anchor="middle">view</text>
+      <path class="ar wide" data-p="view" d="M154 62 H 222"/><path class="hd" data-p="view" d="M237 62 L 220 52.5 V 71.5 Z"/>
+      <text class="sub" x="195" y="88" text-anchor="middle">the function</text>
+      <rect class="bx data" data-p="dstate" x="14" y="206" width="130" height="62"/>
+      <text class="nm sm data" x="79" y="233" text-anchor="middle">state’s</text>
+      <text class="nm sm data" x="79" y="252" text-anchor="middle">change</text>
+      <rect class="bx scr" data-p="dscreen" x="246" y="206" width="130" height="62"/>
+      <text class="nm sm scr" x="311" y="233" text-anchor="middle">screen’s</text>
+      <text class="nm sm scr" x="311" y="252" text-anchor="middle">change</text>
+      <text class="fn" x="195" y="222" text-anchor="middle">dview</text>
+      <path class="ar" data-p="dview" d="M154 237 H 226"/><path class="hd" data-p="dview" d="M237 237 L 225 231 V 243 Z"/>
+      <text class="sub" x="195" y="262" text-anchor="middle">its derivative</text>
+      <path class="ar data" data-p="upl" d="M79 200 V 114"/><path class="hd data" data-p="upl" d="M79 103 L 73 115 H 85 Z"/>
+      <text class="sub" x="90" y="156">applied to</text>
+      <path class="ar" data-p="upr" d="M311 200 V 114"/><path class="hd" data-p="upr" d="M311 103 L 305 115 H 317 Z"/>
+      <text class="sub" x="300" y="156" text-anchor="end">applied to</text>
     </svg></div>
-    <p class="cap">The whole idea, with nothing else in it. Along the top, the view turns the state into the screen. Underneath, its derivative turns a change to the state into a change to the screen. The figure below is this same diagram with a working to-do list in it.</p>
+    <p class="cap">The whole idea, with nothing else in it. Along the top, the view turns the state into the screen. Underneath, its derivative turns a change to the state into a change to the screen. The figure below is this same diagram with a working to-do list in it, and the two light up together.</p>
     <div class="fig" data-fig="deui"></div>
     <p class="cap">In this figure the derivative is hand-written JavaScript, and the check reruns the view after every change to compare. In a proved version the check is a proof, done once, before the program runs. lean-puri is one.</p>
     <dl class="verdict">

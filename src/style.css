@@ -819,22 +819,32 @@ h2 .claim { font-weight: 300; color: var(--ink); }
 .demo.fig-puri .cu { border-color: var(--data); color: var(--data-ink); }
 .demo.fig-puri .u-in:focus-visible, .demo.fig-deui .u-in:focus-visible { outline-color: var(--data); }
 
-/* deui's idea with nothing else in it: two rows. Big things and a thick arrow on top, small things and a thin one under them. */
-.sq .bx { stroke-width: 1; }
+/* deui's idea with nothing else in it: two rows of three. Big things and a thick arrow on top, small things and a thin one
+   under them. A part lights (`lit`) when the figure below does the same thing. */
+.sq .bx { stroke-width: 1; transition: fill .18s ease, stroke-width .18s ease; }
 .sq .bx.data { fill: var(--data-tint); stroke: var(--data); }
 .sq .bx.scr { fill: var(--scr-tint); stroke: var(--scr); }
-.sq .ar { fill: none; stroke: var(--scr); stroke-width: 1.5; }
+.sq .bx.data.lit { fill: color-mix(in srgb, var(--data) 38%, var(--data-tint)); stroke-width: 2.5; }
+.sq .bx.scr.lit { fill: color-mix(in srgb, var(--scr) 38%, var(--scr-tint)); stroke-width: 2.5; }
+.sq .ar { fill: none; stroke: var(--scr); stroke-width: 1.5; transition: stroke-width .18s ease; }
 .sq .ar.wide { stroke-width: 5; }
 .sq .ar.data { stroke: var(--data); }
+.sq .ar.lit { stroke-width: 4; }
+.sq .ar.wide.lit { stroke-width: 9; }
 .sq .hd { fill: var(--scr); }
 .sq .hd.data { fill: var(--data); }
-.sq .fn { font-family: var(--font-mono); font-size: 15px; font-weight: 600; fill: var(--ink); }
+.sq .nm { font-family: var(--font-display); font-size: 19px; font-weight: 600; }
+.sq .nm.sm { font-size: 15.5px; }
+.sq .nm.data { fill: var(--data-ink); }
+.sq .nm.scr { fill: var(--scr-ink); }
+.sq .fn { font-family: var(--font-mono); font-size: 17px; font-weight: 600; fill: var(--ink); }
 .sq .sub { font-family: var(--font-display); font-size: 12.5px; fill: var(--soft); }
-.sq .eg { font-family: var(--font-mono); font-size: 13px; fill: var(--ink); }
 .sq .sq-narrow { display: none; }
-@media (max-width: 700px) {   /* on a phone the same six things, drawn to fit: the long names are in the wide one */
+@media (max-width: 700px) {   /* on a phone, the same six things drawn to fit */
   .sq .sq-wide { display: none; }
   .sq .sq-narrow { display: block; min-width: 0; max-width: 430px; margin: 0 auto; }
-  .sq .eg { font-size: 12.5px; }
+  .sq .nm { font-size: 17px; }
+  .sq .fn { font-size: 15px; }
+  .sq .nm.sm { font-size: 14px; }
   .sq .sub { font-size: 11.5px; }
 }
