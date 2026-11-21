@@ -8,10 +8,17 @@ dependencies and no build tools beyond a shell script.
 
     sh build.sh
 
-writes `out/two-piles.html`, the page as it is published, and
-`out/preview.html`, the same page wrapped so a browser can open it from disk.
+writes `out/two-piles.html`, the page as it is published as an Artifact,
+`out/preview.html`, the same page wrapped so a browser can open it from disk,
+and `out/index.html`, the page as a document of its own.
 `sh build.sh <file> [title]` writes the page somewhere else, under another
 title if one is given.
+
+## On the web
+
+Every push to `main` builds the page and publishes `out/index.html` with
+GitHub Pages, at https://jbrownson.github.io/two-piles/. The workflow is
+`.github/workflows/pages.yml`.
 
 ## Sources
 
